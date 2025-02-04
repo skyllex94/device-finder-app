@@ -5,29 +5,39 @@ import "react-native-reanimated";
 
 import "../global.css";
 import SplashScreen from "./splash";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
-  initialRouteName: "(tabs)",
+  // This is the set initialRoute
+  initialRouteName: "/index",
 };
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
+  const [appFirstOpened, setAppFirstOpened] = useState<boolean | null>(null);
 
   useEffect(() => {
     async function prepare() {
       try {
-        // Delay for 1 second
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Check if first time opened to display OnBoarding
+        const storageValue = await AsyncStorage.getItem("isFirstOpen");
+        const isFirstOpen = storageValue === "false" ? false : true;
 
-        // Add any initialization logic here
-        // For example:
-        // await loadInitialData();
-        // await setupBluetooth();
+        if (isFirstOpen) {
+          await AsyncStorage.setItem("isFirstOpen", "true");
+        }
+        setAppFirstOpened(isFirstOpen);
+        console.log("isFirstOpen:", isFirstOpen);
+
+        // Delay for 1 second for Splash Screen
+        await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (e) {
         console.warn(e);
+        setAppFirstOpened(false);
       } finally {
         setIsReady(true);
       }
@@ -40,14 +50,28 @@ export default function RootLayout() {
     return <SplashScreen />;
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-    </Stack>
+    <GestureHandlerRootView>
+      <BottomSheetModalProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen
+            name="index"
+            options={{ gestureEnabled: false }}
+            initialParams={{ appFirstOpened }}
+          />
+          <Stack.Screen name="main" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ presentation: "modal" }} />
+
+          <Stack.Screen
+            name="onboarding"
+            options={{
+              headerShown: false,
+              gestureEnabled: false,
+              animation: "fade",
+            }}
+          />
+        </Stack>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }
