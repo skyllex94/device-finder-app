@@ -4,7 +4,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeStore } from "../components/Themed";
 import Animated, {
@@ -45,6 +45,10 @@ export default function DeviceTracker() {
 
   const percentage = calculatePercentage(activeDevice?.roundedDistance || 0);
   const ringSize = width * 0.7;
+  const outerRingSize = width * 0.9;
+  const centerCircleSize = ringSize * 0.4;
+  const ripples = [0, 1, 2, 3, 4, 5, 6];
+
   const ringProgress = useSharedValue(0);
 
   useEffect(() => {
@@ -58,15 +62,15 @@ export default function DeviceTracker() {
     transform: [{ scale: ringProgress.value }],
   }));
 
-  // Rotating radar line animation
+  // Slower radar line rotation
   const rotation = useSharedValue(0);
   useEffect(() => {
     rotation.value = withRepeat(
       withTiming(360, {
-        duration: 4000, // 4 seconds per rotation
+        duration: 6000, // Increased from 4000 to 6000 ms
         easing: Easing.linear,
       }),
-      -1, // infinite repeats
+      -1,
       false
     );
   }, []);
@@ -75,18 +79,17 @@ export default function DeviceTracker() {
     transform: [{ rotate: `${rotation.value}deg` }],
   }));
 
-  // Ripple animations
-  const ripples = [0, 1, 2, 3];
+  // Slower ripple animations
   const createRipple = (index: number) => {
-    const rippleScale = useSharedValue(0.6);
+    const rippleScale = useSharedValue(1);
     const rippleOpacity = useSharedValue(0.6);
 
     useEffect(() => {
-      const delay = index * 1000; // Stagger ripples
+      const delay = index * 800; // Increased from 600 to 800 ms
       setTimeout(() => {
         rippleScale.value = withRepeat(
-          withTiming(1, {
-            duration: 4000,
+          withTiming(outerRingSize / centerCircleSize, {
+            duration: 5600, // Increased from 4200 to 5600 ms
             easing: Easing.linear,
           }),
           -1,
@@ -94,7 +97,7 @@ export default function DeviceTracker() {
         );
         rippleOpacity.value = withRepeat(
           withTiming(0, {
-            duration: 4000,
+            duration: 5600, // Matched with scale duration
             easing: Easing.linear,
           }),
           -1,
@@ -111,63 +114,157 @@ export default function DeviceTracker() {
 
   const rippleStyles = ripples.map(createRipple);
 
+  // Calculate dynamic center circle size
+  const getCircleSize = (percent: number) => {
+    const minSize = centerCircleSize; // Original size at 100%
+    const maxSize = outerRingSize * 0.95; // Almost full size of outer ring
+    const scale = 1 + ((100 - percent) / 100) * (maxSize / minSize - 1);
+    return centerCircleSize * scale;
+  };
+
+  const dynamicCircleSize = getCircleSize(percentage);
+  const circleScale = useSharedValue(1);
+
+  // Animate circle size changes
+  useEffect(() => {
+    circleScale.value = withSpring(dynamicCircleSize / centerCircleSize, {
+      damping: 15,
+      stiffness: 90,
+    });
+  }, [percentage]);
+
+  const circleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: circleScale.value }],
+  }));
+
   return (
     <View
       className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}
       style={{ paddingTop: 60 }}
     >
-      <View className="flex-row items-center px-4 mb-6">
-        <TouchableOpacity onPress={() => router.back()} className="p-2">
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color={isDarkMode ? "#fff" : "#000"}
-          />
-        </TouchableOpacity>
-        <Text
-          className={`text-xl font-semibold ml-2 ${
-            isDarkMode ? "text-white" : "text-black"
-          }`}
-        >
-          {activeDevice?.name || "Device"}
-        </Text>
+      {/* Header with Map Button */}
+      <View className="flex-row items-center justify-between px-4 mb-6">
+        <View className="flex-row items-center flex-1">
+          <TouchableOpacity onPress={() => router.back()} className="p-2">
+            <Ionicons
+              name="arrow-back"
+              size={24}
+              color={isDarkMode ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
+          <Text
+            className={`text-xl font-semibold ml-2 ${
+              isDarkMode ? "text-white" : "text-black"
+            }`}
+          >
+            {activeDevice?.name || "Device"}
+          </Text>
+        </View>
+
+        <Link href="/map" asChild>
+          <TouchableOpacity className="p-2">
+            <Ionicons
+              name="map-outline"
+              size={24}
+              color={isDarkMode ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
+        </Link>
       </View>
 
       <View className="flex-1 items-center justify-center">
         <View
           style={{
-            width: ringSize,
-            height: ringSize,
+            width: outerRingSize,
+            height: outerRingSize,
             position: "relative",
           }}
         >
-          {/* Background Ring */}
-          <View
-            className={`absolute w-full h-full rounded-full border-8 ${
-              isDarkMode ? "border-gray-800" : "border-gray-200"
-            }`}
+          {/* Center Circle - moved to back */}
+          <Animated.View
+            className="absolute bg-blue-500 rounded-full"
+            style={[
+              {
+                width: centerCircleSize,
+                height: centerCircleSize,
+                top: (outerRingSize - centerCircleSize) / 2,
+                left: (outerRingSize - centerCircleSize) / 2,
+                zIndex: 1, // Lowest z-index
+              },
+              circleStyle,
+            ]}
           />
 
           {/* Ripple Effects */}
           {ripples.map((_, index) => (
             <Animated.View
               key={index}
-              className="absolute w-full h-full rounded-full border border-blue-400"
               style={[
                 {
-                  transform: [{ scale: 1 }],
+                  position: "absolute",
+                  width: centerCircleSize,
+                  height: centerCircleSize,
+                  borderRadius: centerCircleSize / 2,
+                  borderWidth: 1,
+                  borderColor: "#60A5FA",
+                  top: (outerRingSize - centerCircleSize) / 2,
+                  left: (outerRingSize - centerCircleSize) / 2,
+                  zIndex: 2, // Above center circle, below rings
                 },
                 rippleStyles[index],
               ]}
             />
           ))}
 
+          {/* Outer Ring */}
+          <View
+            className={`absolute w-full h-full rounded-full border-8 ${
+              isDarkMode ? "border-gray-800/50" : "border-gray-200/50"
+            }`}
+            style={{ zIndex: 3 }} // Above ripples
+          />
+
+          {/* Inner Ring */}
+          <View
+            style={{
+              position: "absolute",
+              width: ringSize,
+              height: ringSize,
+              top: (outerRingSize - ringSize) / 2,
+              left: (outerRingSize - ringSize) / 2,
+              zIndex: 3, // Same as outer ring
+            }}
+          >
+            <View
+              className={`absolute w-full h-full rounded-full border-8 ${
+                isDarkMode ? "border-gray-800" : "border-gray-200"
+              }`}
+            />
+          </View>
+
+          {/* Text Layer - stays on top */}
+          <View
+            className="absolute items-center justify-center"
+            style={{
+              width: centerCircleSize,
+              height: centerCircleSize,
+              top: (outerRingSize - centerCircleSize) / 2,
+              left: (outerRingSize - centerCircleSize) / 2,
+              zIndex: 4, // Highest z-index
+            }}
+          >
+            <Text className="text-4xl font-bold text-white">{percentage}%</Text>
+            <Text className="text-white mt-1">
+              {activeDevice?.roundedDistance?.toFixed(2) || "0.00"}m
+            </Text>
+          </View>
+
           {/* Radar Line */}
           <Animated.View
             style={[
               {
                 position: "absolute",
-                width: "50%",
+                width: outerRingSize / 2,
                 height: 2,
                 backgroundColor: isDarkMode ? "#4B5563" : "#9CA3AF",
                 top: "50%",
@@ -178,21 +275,15 @@ export default function DeviceTracker() {
             ]}
           />
 
-          {/* Center Circle with Data */}
-          <View className="absolute w-40 h-40 rounded-full bg-blue-500 left-1/2 top-1/2 -ml-20 -mt-20 items-center justify-center">
-            <Text className="text-4xl font-bold text-white">{percentage}%</Text>
-            <Text className="text-white mt-1">
-              {activeDevice?.roundedDistance?.toFixed(2) || "0.00"}m
-            </Text>
-          </View>
-
           {/* Progress Ring */}
           <Animated.View
             style={[
               {
-                width: "100%",
-                height: "100%",
                 position: "absolute",
+                width: ringSize,
+                height: ringSize,
+                top: (outerRingSize - ringSize) / 2,
+                left: (outerRingSize - ringSize) / 2,
               },
               ringStyle,
             ]}
