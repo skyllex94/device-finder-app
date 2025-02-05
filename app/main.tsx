@@ -8,7 +8,7 @@ import {
   Platform,
 } from "react-native";
 import React, { useState, useCallback, useEffect } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useThemeStore } from "../components/Themed";
@@ -56,6 +56,156 @@ interface SavedDevice {
 
 // Initialize BLE Manager
 const bleManager = new BleManager();
+
+const PulsingRing = React.memo(({ delay }: { delay: number }) => {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
+
+  scale.value = withRepeat(
+    withTiming(3, {
+      duration: 2000,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    }),
+    -1,
+    false
+  );
+
+  opacity.value = withRepeat(
+    withTiming(0, {
+      duration: 2000,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    }),
+    -1,
+    false
+  );
+
+  const ringStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={[ringStyle]} className="absolute">
+      <LinearGradient
+        colors={["rgba(96, 165, 250, 0.5)", "rgba(96, 165, 250, 0)"]}
+        style={{
+          width: 100,
+          height: 100,
+          borderRadius: 50,
+          padding: 2,
+        }}
+      >
+        <View className="w-full h-full rounded-full bg-transparent" />
+      </LinearGradient>
+    </Animated.View>
+  );
+});
+
+const RadarSweep = React.memo(() => {
+  const rotation = useSharedValue(0);
+
+  rotation.value = withRepeat(
+    withTiming(360, {
+      duration: 3000,
+      easing: Easing.linear,
+    }),
+    -1,
+    false
+  );
+
+  const sweepStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  return (
+    <Animated.View style={[sweepStyle]} className="absolute w-72 h-72">
+      <LinearGradient
+        colors={["rgba(59, 130, 246, 0.3)", "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          width: "50%",
+          height: "50%",
+          borderTopLeftRadius: 144,
+        }}
+      />
+    </Animated.View>
+  );
+});
+
+const PulsingRings = React.memo(() => {
+  const rings = [1, 2, 3, 4];
+  return (
+    <View className="items-center justify-center">
+      {rings.map((ring) => (
+        <PulsingRing key={ring} delay={ring * 500} />
+      ))}
+      <View className="absolute z-10">
+        <LinearGradient
+          colors={["#60A5FA", "#3B82F6"]}
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: 40,
+          }}
+        >
+          <Feather
+            className="absolute top-[25%] left-[25%] z-12 opacity-55"
+            name="bluetooth"
+            size={38}
+            color="black"
+          />
+        </LinearGradient>
+      </View>
+      <RadarSweep />
+    </View>
+  );
+});
+
+const ModalContent = React.memo(() => (
+  <View className="flex-1 items-center justify-center">
+    <View className="absolute w-full h-full items-center justify-center">
+      <PulsingRings />
+    </View>
+    <Text className="absolute bottom-4 text-lg font-semibold text-white">
+      Searching...
+    </Text>
+  </View>
+));
+
+const SearchModal = React.memo(
+  ({
+    isVisible,
+    onClose,
+    isDarkMode,
+    height,
+  }: {
+    isVisible: boolean;
+    onClose: () => void;
+    isDarkMode: boolean;
+    height: number;
+  }) => (
+    <Modal
+      visible={isVisible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity className="flex-1" activeOpacity={1} onPress={onClose}>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View
+            className={`mx-4 mb-4 rounded-2xl ${
+              isDarkMode ? "bg-gray-800" : "bg-white"
+            }`}
+            style={{ height: height * 0.4 }}
+          >
+            <ModalContent />
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  )
+);
 
 export default function MainScreen() {
   const router = useRouter();
@@ -427,99 +577,6 @@ export default function MainScreen() {
     </TouchableOpacity>
   );
 
-  // Updated PulsingRings with water drop effect
-  const PulsingRings = () => {
-    const rings = [1, 2, 3, 4, 5]; // More rings for smoother effect
-    return (
-      <View className="items-center justify-center">
-        {rings.map((ring) => (
-          <PulsingRing key={ring} delay={ring * 400} /> // Shorter delay for faster sequence
-        ))}
-        {/* Bluetooth icon with glow effect */}
-        <View
-          style={{
-            position: "absolute",
-            shadowColor: "#3B82F6",
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.5,
-            shadowRadius: 10,
-          }}
-        >
-          <Ionicons name="bluetooth" size={50} color="#3B82F6" />
-        </View>
-      </View>
-    );
-  };
-
-  const PulsingRing = ({ delay }: { delay: number }) => {
-    const scale = useSharedValue(0.5);
-    const opacity = useSharedValue(0.8);
-
-    useEffect(() => {
-      setTimeout(() => {
-        scale.value = withRepeat(
-          withSequence(
-            withTiming(0.5, { duration: 0 }),
-            withTiming(2.5, {
-              duration: 1800,
-              easing: Easing.cubic, // Use Reanimated's cubic easing
-            })
-          ),
-          -1,
-          false
-        );
-        opacity.value = withRepeat(
-          withSequence(
-            withTiming(0.8, { duration: 0 }),
-            withTiming(0, {
-              duration: 1800,
-              easing: Easing.ease, // Use Reanimated's ease easing
-            })
-          ),
-          -1,
-          false
-        );
-      }, delay);
-    }, [delay]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-      transform: [{ scale: scale.value }],
-      opacity: opacity.value,
-    }));
-
-    return (
-      <Animated.View
-        style={[
-          {
-            position: "absolute",
-            width: 50,
-            height: 50,
-            borderRadius: 25,
-            borderWidth: 2,
-            borderColor: "#3B82F6",
-            transform: [{ scale: 1 }],
-            opacity: 1,
-          },
-          animatedStyle,
-        ]}
-      />
-    );
-  };
-
-  // Update the modal content
-  const renderModalContent = () => (
-    <View className="flex-1 items-center justify-center">
-      <PulsingRings />
-      <Text
-        className={`mt-8 text-lg font-semibold ${
-          isDarkMode ? "text-white" : "text-black"
-        }`}
-      >
-        Searching...
-      </Text>
-    </View>
-  );
-
   // Load saved devices on mount
   useEffect(() => {
     loadSavedDevices();
@@ -852,30 +909,12 @@ export default function MainScreen() {
         {renderOtherDevicesSection()}
       </ScrollView>
 
-      {/* Search Modal */}
-      <Modal
-        visible={isSearching}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setIsSearching(false)}
-      >
-        <TouchableOpacity
-          className="flex-1"
-          activeOpacity={1}
-          onPress={() => setIsSearching(false)}
-        >
-          <View className="flex-1 bg-black/50 justify-end">
-            <View
-              className={`mx-4 mb-4 rounded-2xl ${
-                isDarkMode ? "bg-gray-800" : "bg-white"
-              }`}
-              style={{ height: height * 0.3 }}
-            >
-              {renderModalContent()}
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <SearchModal
+        isVisible={isSearching}
+        onClose={() => setIsSearching(false)}
+        isDarkMode={isDarkMode}
+        height={height}
+      />
 
       {/* New Search Button */}
       <View className="items-center">
