@@ -449,7 +449,9 @@ export default function MainScreen() {
   // Remove the old scanning logic from handleStartSearch
   const handleStartSearch = useCallback(() => {
     setIsSearching(true);
-    // Auto-close after 3 seconds
+    setOtherDevices([]); // Clear the list
+
+    // Auto-close after 5 seconds
     setTimeout(() => {
       setIsSearching(false);
     }, 5000);
@@ -742,23 +744,16 @@ export default function MainScreen() {
         </TouchableOpacity>
       </View>
       {savedDevices.length > 0 ? (
-        savedDevices.map((savedDevice) => {
-          const activeDevice = otherDevices.find(
-            (d) => d.id === savedDevice.id
-          );
-          return activeDevice ? (
-            renderDeviceItem(activeDevice)
-          ) : (
-            <View
-              key={savedDevice.id}
-              className="p-4 mx-4 rounded-lg mb-2 bg-gray-100"
-            >
-              <Text className="text-gray-400">
-                {savedDevice.name} (Offline)
-              </Text>
-            </View>
-          );
-        })
+        savedDevices
+          .filter((savedDevice) =>
+            otherDevices.some((d) => d.id === savedDevice.id)
+          )
+          .map((savedDevice) => {
+            const activeDevice = otherDevices.find(
+              (d) => d.id === savedDevice.id
+            );
+            return activeDevice && renderDeviceItem(activeDevice);
+          })
       ) : (
         <View className="p-4 items-center">
           <Text className="text-gray-500">No saved devices</Text>
