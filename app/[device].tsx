@@ -14,9 +14,12 @@ import Animated, {
   withTiming,
   withRepeat,
   Easing,
+  withSequence,
+  runOnJS,
+  withDelay,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDeviceStore } from "../store/deviceStore";
 import { interpolate, Extrapolate } from "react-native-reanimated";
 
@@ -28,6 +31,9 @@ export default function DeviceTracker() {
 
   const setActiveDevice = useDeviceStore((state) => state.setActiveDevice);
   const activeDevice = useDeviceStore((state) => state.getActiveDevice());
+
+  const [isFound, setIsFound] = useState(false);
+  const checkScale = useSharedValue(0);
 
   useEffect(() => {
     if (deviceId) {
@@ -137,6 +143,49 @@ export default function DeviceTracker() {
     transform: [{ scale: circleScale.value }],
   }));
 
+  const handleDeviceFound = () => {
+    setIsFound(true);
+    // Smoother circle expansion
+    circleScale.value = withSpring(outerRingSize / centerCircleSize, {
+      damping: 12,
+      stiffness: 80,
+      mass: 1,
+    });
+
+    // Enhanced check mark animation
+    checkScale.value = withSequence(
+      withSpring(1.2, {
+        damping: 12,
+        stiffness: 100,
+      }),
+      withSpring(1, {
+        damping: 10,
+        stiffness: 100,
+      }),
+      withDelay(
+        1000,
+        withTiming(
+          0,
+          {
+            duration: 400,
+            easing: Easing.inOut(Easing.ease),
+          },
+          () => {
+            runOnJS(router.back)();
+          }
+        )
+      )
+    );
+  };
+
+  const checkStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: checkScale.value },
+      { translateY: 1 * checkScale.value }, // Center vertically
+    ],
+    opacity: checkScale.value,
+  }));
+
   return (
     <View
       className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}
@@ -243,21 +292,25 @@ export default function DeviceTracker() {
           </View>
 
           {/* Text Layer - stays on top */}
-          <View
-            className="absolute items-center justify-center"
-            style={{
-              width: centerCircleSize,
-              height: centerCircleSize,
-              top: (outerRingSize - centerCircleSize) / 2,
-              left: (outerRingSize - centerCircleSize) / 2,
-              zIndex: 4, // Highest z-index
-            }}
-          >
-            <Text className="text-4xl font-bold text-white">{percentage}%</Text>
-            <Text className="text-white mt-1">
-              {activeDevice?.roundedDistance?.toFixed(2) || "0.00"}m
-            </Text>
-          </View>
+          {!isFound && (
+            <View
+              className="absolute items-center justify-center"
+              style={{
+                width: centerCircleSize,
+                height: centerCircleSize,
+                top: (outerRingSize - centerCircleSize) / 2,
+                left: (outerRingSize - centerCircleSize) / 2,
+                zIndex: 4, // Highest z-index
+              }}
+            >
+              <Text className="text-4xl font-bold text-white">
+                {percentage}%
+              </Text>
+              <Text className="text-white mt-1">
+                {activeDevice?.roundedDistance?.toFixed(2) || "0.00"}m
+              </Text>
+            </View>
+          )}
 
           {/* Radar Line */}
           <Animated.View
@@ -306,6 +359,24 @@ export default function DeviceTracker() {
             ? "Device is out of range"
             : "Getting closer..."}
         </Text>
+      </View>
+
+      {/* Success Check Mark - centered in circle */}
+      <Animated.View
+        style={[checkStyle]}
+        className="absolute top-[62px] z-20 w-full h-full items-center justify-center"
+      >
+        <Ionicons name="checkmark-circle" size={100} color="white" />
+      </Animated.View>
+
+      {/* Found Device Button */}
+      <View className="absolute bottom-10 w-full items-center">
+        <TouchableOpacity
+          onPress={handleDeviceFound}
+          className="bg-blue-500 w-[85%] py-4 rounded-full items-center"
+        >
+          <Text className="text-white text-lg font-semibold">Found Device</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
