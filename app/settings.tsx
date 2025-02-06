@@ -4,10 +4,12 @@ import { View, Text } from "react-native";
 import { useThemeStore } from "@/components/Themed";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSettingsStore } from "../store/settingsStore";
 
 export default function Settings() {
   const { isDarkMode, toggleTheme } = useThemeStore();
   const router = useRouter();
+  const { distanceUnit, setDistanceUnit } = useSettingsStore();
 
   return (
     <View className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}>
@@ -107,6 +109,41 @@ export default function Settings() {
               />
               <Text className="text-red-500">Clear All Data</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+
+        <View className="px-4 py-2">
+          <Text
+            className={`text-lg font-semibold mb-2 ${
+              isDarkMode ? "text-white" : "text-black"
+            }`}
+          >
+            Distance Unit
+          </Text>
+          <View className="flex-row space-x-2">
+            {(["automatic", "meters", "feet"] as const).map((unit) => (
+              <TouchableOpacity
+                key={unit}
+                onPress={() => setDistanceUnit(unit)}
+                className={`px-4 py-2 rounded-full ${
+                  distanceUnit === unit
+                    ? isDarkMode
+                      ? "bg-blue-500"
+                      : "bg-blue-600"
+                    : isDarkMode
+                    ? "bg-gray-800"
+                    : "bg-gray-200"
+                }`}
+              >
+                <Text
+                  className={`capitalize ${
+                    distanceUnit === unit ? "text-white" : "text-gray-600"
+                  }`}
+                >
+                  {unit}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </View>

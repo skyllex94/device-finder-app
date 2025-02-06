@@ -27,6 +27,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useDeviceStore } from "../store/deviceStore";
+import { useSettingsStore } from "../store/settingsStore";
 
 interface Device {
   id: string;
@@ -221,6 +222,7 @@ export default function MainScreen() {
   const [isAddingDevice, setIsAddingDevice] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [isFilteringDevices, setIsFilteringDevices] = useState(false);
+  const { distanceUnit } = useSettingsStore();
 
   // Refined Kalman Filter parameters for better accuracy
   const KF = {
@@ -529,6 +531,30 @@ export default function MainScreen() {
     return Number((Math.round(value * 4) / 4).toFixed(2));
   };
 
+  const formatDistance = (meters: number): string => {
+    if (distanceUnit === "feet") {
+      const feet = meters * 3.28084;
+      return feet < 1000
+        ? `${feet.toFixed(1)}ft`
+        : `${(feet / 5280).toFixed(2)}mi`;
+    }
+    if (distanceUnit === "meters") {
+      return meters < 1000
+        ? `${meters.toFixed(1)}m`
+        : `${(meters / 1000).toFixed(2)}km`;
+    }
+    // automatic - use system locale
+    if (Platform.OS === "ios") {
+      const feet = meters * 3.28084;
+      return feet < 1000
+        ? `${feet.toFixed(1)}ft`
+        : `${(feet / 5280).toFixed(2)}mi`;
+    }
+    return meters < 1000
+      ? `${meters.toFixed(1)}m`
+      : `${(meters / 1000).toFixed(2)}km`;
+  };
+
   const renderDeviceItem = (device: Device) => (
     <TouchableOpacity
       key={device.id}
@@ -556,7 +582,7 @@ export default function MainScreen() {
         {device.distance && (
           <View className="flex-row items-center space-x-2">
             <Text className={`text-sm ${getDistanceColor(device)}`}>
-              Distance: {device.distance.toFixed(2)}m{" "}
+              Distance: {formatDistance(device.distance)}{" "}
               {getDistanceIndicator(device)}
             </Text>
             <Text className="text-xs text-gray-400">
@@ -694,7 +720,7 @@ export default function MainScreen() {
                         </Text>
                         {device.roundedDistance && (
                           <Text className="text-gray-400">
-                            Distance: {device.roundedDistance}m
+                            Distance: {formatDistance(device.roundedDistance)}
                           </Text>
                         )}
                       </View>
@@ -847,7 +873,7 @@ export default function MainScreen() {
                         </Text>
                         {device.roundedDistance && (
                           <Text className="text-gray-400">
-                            Distance: {device.roundedDistance}m
+                            Distance: {formatDistance(device.roundedDistance)}
                           </Text>
                         )}
                       </View>

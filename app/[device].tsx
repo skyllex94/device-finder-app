@@ -3,6 +3,7 @@ import {
   Text,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from "react-native";
 import { useRouter, useLocalSearchParams, Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,12 +23,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { useDeviceStore } from "../store/deviceStore";
 import { interpolate, Extrapolate } from "react-native-reanimated";
+import { formatDistance } from "@/utils/distanceUnits";
+import { useSettingsStore } from "../store/settingsStore";
 
 export default function DeviceTracker() {
   const router = useRouter();
   const { isDarkMode } = useThemeStore();
   const { width } = useWindowDimensions();
   const { device: deviceId } = useLocalSearchParams();
+  const { distanceUnit } = useSettingsStore();
 
   const setActiveDevice = useDeviceStore((state) => state.setActiveDevice);
   const activeDevice = useDeviceStore((state) => state.getActiveDevice());
@@ -186,6 +190,38 @@ export default function DeviceTracker() {
     opacity: checkScale.value,
   }));
 
+  const formatDistance = (meters: number): string => {
+    if (distanceUnit === "feet") {
+      const feet = meters * 3.28084;
+      return feet < 1000
+        ? `${feet.toFixed(1)}ft`
+        : `${(feet / 5280).toFixed(2)}mi`;
+    }
+    if (distanceUnit === "meters") {
+      return meters < 1000
+        ? `${meters.toFixed(1)}m`
+        : `${(meters / 1000).toFixed(2)}km`;
+    }
+    // automatic - use system locale
+    if (Platform.OS === "ios") {
+      const feet = meters * 3.28084;
+      return feet < 1000
+        ? `${feet.toFixed(1)}ft`
+        : `${(feet / 5280).toFixed(2)}mi`;
+    }
+    return meters < 1000
+      ? `${meters.toFixed(1)}m`
+      : `${(meters / 1000).toFixed(2)}km`;
+  };
+
+  if (!activeDevice) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text>Device not found</Text>
+      </View>
+    );
+  }
+
   return (
     <View
       className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}
@@ -300,14 +336,14 @@ export default function DeviceTracker() {
                 height: centerCircleSize,
                 top: (outerRingSize - centerCircleSize) / 2,
                 left: (outerRingSize - centerCircleSize) / 2,
-                zIndex: 4, // Highest z-index
+                zIndex: 4,
               }}
             >
               <Text className="text-4xl font-bold text-white">
                 {percentage}%
               </Text>
               <Text className="text-white mt-1">
-                {activeDevice?.roundedDistance?.toFixed(2) || "0.00"}m
+                {formatDistance(activeDevice?.distance || 0)}
               </Text>
             </View>
           )}
@@ -353,11 +389,13 @@ export default function DeviceTracker() {
             isDarkMode ? "text-gray-400" : "text-gray-600"
           }`}
         >
-          {percentage === 100
+          {percentage >= 95
             ? "You're right next to the device!"
-            : percentage === 0
-            ? "Device is out of range"
-            : "Getting closer..."}
+            : percentage >= 80
+            ? "Device is in close proximity"
+            : percentage >= 20
+            ? "Searched device is is range"
+            : "Device barely in range"}
         </Text>
       </View>
 
