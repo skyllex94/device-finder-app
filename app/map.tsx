@@ -10,50 +10,32 @@ import { Platform } from "react-native";
 
 export default function MapScreen() {
   const router = useRouter();
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null
-  );
   const [region, setRegion] = useState<Region | null>(null);
   const devices = useDeviceStore((state) => state.devices);
   const { distanceUnit } = useSettingsStore();
 
+  // Single useEffect to log device locations
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.log("Location permission denied");
-        return;
-      }
+    // Log all device locations from store
+    console.log("Current device locations:");
+    devices.forEach((device) => {
+      console.log(`${device.name}:`, {
+        location: device.location,
+        distance: device.distance ? formatDistance(device.distance) : "unknown",
+        lastSeen: device.lastSeen,
+      });
+    });
 
-      try {
-        const currentLocation = await Location.getCurrentPositionAsync({});
-        console.log("Location obtained:", currentLocation);
-        setLocation(currentLocation);
-
-        // Set initial region
-        setRegion({
-          latitude: currentLocation.coords.latitude,
-          longitude: currentLocation.coords.longitude,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        });
-      } catch (error) {
-        console.error("Location error:", error);
-      }
-    })();
-  }, []);
-
-  // Debug logging for devices
-  useEffect(() => {
-    console.log(
-      "Devices with locations:",
-      devices
-        .filter((d) => d.location)
-        .map((d) => ({
-          name: d.name,
-          location: d.location,
-        }))
-    );
+    // Set initial region to first device with location
+    const firstDeviceWithLocation = devices.find((d) => d.location);
+    if (firstDeviceWithLocation?.location && !region) {
+      setRegion({
+        latitude: firstDeviceWithLocation.location.latitude,
+        longitude: firstDeviceWithLocation.location.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      });
+    }
   }, [devices]);
 
   const formatDistance = (meters: number): string => {
@@ -80,6 +62,34 @@ export default function MapScreen() {
       : `${(meters / 1000).toFixed(2)}km`;
   };
 
+  const calculateDeviceLocation = (
+    currentLocation: Location.LocationObject,
+    distance: number
+  ) => {
+    const angle = Math.random() * 2 * Math.PI;
+    const R = 6371000; // Earth's radius in meters
+
+    const lat1 = currentLocation.coords.latitude * (Math.PI / 180);
+    const lon1 = currentLocation.coords.longitude * (Math.PI / 180);
+
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(distance / R) +
+        Math.cos(lat1) * Math.sin(distance / R) * Math.cos(angle)
+    );
+
+    const lon2 =
+      lon1 +
+      Math.atan2(
+        Math.sin(angle) * Math.sin(distance / R) * Math.cos(lat1),
+        Math.cos(distance / R) - Math.sin(lat1) * Math.sin(lat2)
+      );
+
+    return {
+      latitude: lat2 * (180 / Math.PI),
+      longitude: lon2 * (180 / Math.PI),
+    };
+  };
+
   return (
     <View className="flex-1">
       <MapView
@@ -89,21 +99,8 @@ export default function MapScreen() {
         showsCompass
         region={region || undefined}
       >
-        {location && (
-          <Marker
-            coordinate={{
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-            }}
-            title="You are here"
-            description="Your current location"
-            pinColor="blue"
-          />
-        )}
-
         {devices.map((device) => {
           if (!device.location) {
-            console.log(`Device ${device.name} has no location`);
             return null;
           }
 

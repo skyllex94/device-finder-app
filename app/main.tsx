@@ -394,73 +394,85 @@ export default function MainScreen() {
       bleManager.startDeviceScan(
         null,
         { allowDuplicates: true },
-        (error, device) => {
+        async (error, device) => {
           if (error) {
             console.error("Scan error:", error);
             return;
           }
 
           if (device && device.name) {
-            setOtherDevices((prevDevices) => {
-              const existingDeviceIndex = prevDevices.findIndex(
-                (d) => d.id === device.id
+            try {
+              const currentLocation = await Location.getCurrentPositionAsync(
+                {}
               );
 
-              if (existingDeviceIndex !== -1) {
-                // Update existing device
-                const existingDevice = prevDevices[existingDeviceIndex];
+              setOtherDevices((prevDevices) => {
+                const existingDeviceIndex = prevDevices.findIndex(
+                  (d) => d.id === device.id
+                );
+
+                if (existingDeviceIndex !== -1) {
+                  // Update existing device
+                  const existingDevice = prevDevices[existingDeviceIndex];
+                  const { distance, rssiHistory, kalmanState } =
+                    calculateStableDistance(
+                      device.rssi || -100,
+                      existingDevice
+                    );
+                  const roundedDistance = roundToQuarter(distance);
+
+                  const deviceLocation = calculateDeviceLocation(
+                    currentLocation,
+                    distance
+                  );
+
+                  const updatedDevices = [...prevDevices];
+                  updatedDevices[existingDeviceIndex] = {
+                    ...existingDevice,
+                    rssi: device.rssi || 0,
+                    previousDistance: existingDevice.distance,
+                    distance,
+                    roundedDistance,
+                    rssiHistory,
+                    kalmanState,
+                    lastSeen: new Date(),
+                    location: deviceLocation,
+                  };
+
+                  // Update store
+                  useDeviceStore.getState().updateDevices(updatedDevices);
+                  return updatedDevices;
+                }
+
+                // Add new device
                 const { distance, rssiHistory, kalmanState } =
-                  calculateStableDistance(device.rssi || -100, existingDevice);
-                const roundedDistance = roundToQuarter(distance);
+                  calculateStableDistance(device.rssi || -100, {
+                    rssiHistory: [],
+                  } as any);
 
                 const deviceLocation = calculateDeviceLocation(
                   currentLocation,
                   distance
                 );
 
-                const updatedDevices = [...prevDevices];
-                updatedDevices[existingDeviceIndex] = {
-                  ...existingDevice,
+                const newDevice: Device = {
+                  id: device.id,
+                  name: device.name || "Unknown Device",
                   rssi: device.rssi || 0,
-                  previousDistance: existingDevice.distance,
+                  lastSeen: new Date(),
                   distance,
-                  roundedDistance,
                   rssiHistory,
                   kalmanState,
-                  lastSeen: new Date(),
                   location: deviceLocation,
                 };
-                useDeviceStore.getState().updateDevices(updatedDevices);
-                return updatedDevices;
-              }
 
-              // Add new device
-              const { distance, rssiHistory, kalmanState } =
-                calculateStableDistance(device.rssi || -100, {
-                  rssiHistory: [],
-                } as any);
-
-              const deviceLocation = calculateDeviceLocation(
-                currentLocation,
-                distance
-              );
-
-              const newDevice: Device = {
-                id: device.id,
-                name: device.name || "Unknown Device",
-                rssi: device.rssi || 0,
-                lastSeen: new Date(),
-                distance,
-                rssiHistory,
-                kalmanState,
-                location: deviceLocation,
-              };
-
-              useDeviceStore
-                .getState()
-                .updateDevices([...prevDevices, newDevice]);
-              return [...prevDevices, newDevice];
-            });
+                const newDevices = [...prevDevices, newDevice];
+                useDeviceStore.getState().updateDevices(newDevices);
+                return newDevices;
+              });
+            } catch (error) {
+              console.error("Error updating device location:", error);
+            }
           }
         }
       );
