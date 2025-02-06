@@ -349,6 +349,38 @@ export default function MainScreen() {
     return distance * adjustment;
   };
 
+  // Add this function near your other calculation functions
+  const calculateDeviceLocation = (
+    currentLocation: Location.LocationObject | null,
+    distance: number
+  ) => {
+    if (!currentLocation) return undefined;
+
+    // Calculate a position based on distance and a random angle
+    const angle = Math.random() * 2 * Math.PI; // Random angle in radians
+    const R = 6371000; // Earth's radius in meters
+
+    const lat1 = currentLocation.coords.latitude * (Math.PI / 180);
+    const lon1 = currentLocation.coords.longitude * (Math.PI / 180);
+
+    const lat2 = Math.asin(
+      Math.sin(lat1) * Math.cos(distance / R) +
+        Math.cos(lat1) * Math.sin(distance / R) * Math.cos(angle)
+    );
+
+    const lon2 =
+      lon1 +
+      Math.atan2(
+        Math.sin(angle) * Math.sin(distance / R) * Math.cos(lat1),
+        Math.cos(distance / R) - Math.sin(lat1) * Math.sin(lat2)
+      );
+
+    return {
+      latitude: lat2 * (180 / Math.PI),
+      longitude: lon2 * (180 / Math.PI),
+    };
+  };
+
   // Continuous scanning and distance updates
   useEffect(() => {
     let scanningInterval: NodeJS.Timeout;
@@ -381,6 +413,11 @@ export default function MainScreen() {
                   calculateStableDistance(device.rssi || -100, existingDevice);
                 const roundedDistance = roundToQuarter(distance);
 
+                const deviceLocation = calculateDeviceLocation(
+                  currentLocation,
+                  distance
+                );
+
                 const updatedDevices = [...prevDevices];
                 updatedDevices[existingDeviceIndex] = {
                   ...existingDevice,
@@ -391,6 +428,7 @@ export default function MainScreen() {
                   rssiHistory,
                   kalmanState,
                   lastSeen: new Date(),
+                  location: deviceLocation,
                 };
                 useDeviceStore.getState().updateDevices(updatedDevices);
                 return updatedDevices;
@@ -402,6 +440,11 @@ export default function MainScreen() {
                   rssiHistory: [],
                 } as any);
 
+              const deviceLocation = calculateDeviceLocation(
+                currentLocation,
+                distance
+              );
+
               const newDevice: Device = {
                 id: device.id,
                 name: device.name || "Unknown Device",
@@ -410,12 +453,7 @@ export default function MainScreen() {
                 distance,
                 rssiHistory,
                 kalmanState,
-                location: currentLocation
-                  ? {
-                      latitude: currentLocation.coords.latitude,
-                      longitude: currentLocation.coords.longitude,
-                    }
-                  : undefined,
+                location: deviceLocation,
               };
 
               useDeviceStore
