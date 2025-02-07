@@ -66,6 +66,7 @@ export default function RootLayout() {
             name="direction_finder"
             options={{ presentation: "modal" }}
           />
+          <Stack.Screen name="heatmap" options={{ presentation: "modal" }} />
 
           <Stack.Screen
             name="onboarding"

@@ -247,7 +247,7 @@ export default function DeviceTracker() {
         </View>
 
         <View className="flex-row space-x-2">
-          <Link href="/map" asChild>
+          <Link href={`/map?id=${activeDevice.id}`} asChild>
             <TouchableOpacity className="p-2">
               <Ionicons
                 name="map-outline"
@@ -256,11 +256,19 @@ export default function DeviceTracker() {
               />
             </TouchableOpacity>
           </Link>
-
           <Link href={`/direction_finder?id=${activeDevice.id}`} asChild>
             <TouchableOpacity className="p-2">
               <Ionicons
                 name="navigate-outline"
+                size={24}
+                color={isDarkMode ? "#fff" : "#000"}
+              />
+            </TouchableOpacity>
+          </Link>
+          <Link href={`/heatmap?id=${activeDevice.id}`} asChild>
+            <TouchableOpacity className="p-2">
+              <Ionicons
+                name="radio-outline"
                 size={24}
                 color={isDarkMode ? "#fff" : "#000"}
               />

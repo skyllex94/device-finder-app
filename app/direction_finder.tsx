@@ -14,11 +14,39 @@ export default function DirectionFinder() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
     null
   );
+  const [locationHistory, setLocationHistory] = useState<
+    Array<{ lat: number; lng: number }>
+  >([]);
+  const [centerPoint, setCenterPoint] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const devices = useDeviceStore((state) => state.devices);
   const targetDevice = devices.find((d) => d.id === id);
   const [bearingHistory, setBearingHistory] = useState<number[]>([]);
-  const HISTORY_SIZE = 5; // Number of readings to keep
-  const CONFIDENCE_THRESHOLD = 20; // Degrees of acceptable variation
+  const HISTORY_SIZE = 5;
+  const CONFIDENCE_THRESHOLD = 45;
+  const PROXIMITY_THRESHOLD = 1;
+
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const R = 6371e3;
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
 
   const calculateBearing = (
     lat1: number,
@@ -26,40 +54,58 @@ export default function DirectionFinder() {
     lat2: number,
     lon2: number
   ) => {
-    // Convert to radians
     const φ1 = (lat1 * Math.PI) / 180;
     const φ2 = (lat2 * Math.PI) / 180;
     const Δλ = ((lon2 - lon1) * Math.PI) / 180;
 
-    // Calculate bearing
     const y = Math.sin(Δλ) * Math.cos(φ2);
     const x =
       Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
 
     let bearing = (Math.atan2(y, x) * 180) / Math.PI;
-    bearing = (bearing + 360) % 360; // Normalize to 0-360
+    return (bearing + 360) % 360;
+  };
 
-    return bearing;
+  const calculateCircleCenter = (
+    points: Array<{ lat: number; lng: number }>
+  ) => {
+    if (points.length < HISTORY_SIZE) return null;
+
+    // Calculate centroid
+    const centroid = points.reduce(
+      (acc, point) => ({
+        lat: acc.lat + point.lat / points.length,
+        lng: acc.lng + point.lng / points.length,
+      }),
+      { lat: 0, lng: 0 }
+    );
+
+    return centroid;
   };
 
   const getStableBearing = (newBearing: number): number => {
-    // Add new bearing to history
     const newHistory = [...bearingHistory, newBearing].slice(-HISTORY_SIZE);
     setBearingHistory(newHistory);
 
-    // Calculate average bearing
-    const sum = newHistory.reduce((acc, val) => acc + val, 0);
-    const avgBearing = sum / newHistory.length;
+    // Calculate average bearing with special handling for angle wrapping
+    let sumSin = 0;
+    let sumCos = 0;
+    newHistory.forEach((bearing) => {
+      const rad = (bearing * Math.PI) / 180;
+      sumSin += Math.sin(rad);
+      sumCos += Math.cos(rad);
+    });
+    const avgBearing =
+      ((Math.atan2(sumSin, sumCos) * 180) / Math.PI + 360) % 360;
 
-    // Check if readings are stable
-    const isStable = newHistory.every(
-      (bearing) => Math.abs(bearing - avgBearing) < CONFIDENCE_THRESHOLD
+    // Check if readings are within confidence threshold
+    const isConfident = newHistory.every(
+      (bearing) =>
+        Math.abs(((bearing - avgBearing + 540) % 360) - 180) <
+        CONFIDENCE_THRESHOLD
     );
 
-    // Return average if stable, otherwise keep previous bearing
-    return isStable || newHistory.length < HISTORY_SIZE
-      ? avgBearing
-      : deviceBearing;
+    return isConfident ? avgBearing : deviceBearing;
   };
 
   useEffect(() => {
@@ -70,43 +116,51 @@ export default function DirectionFinder() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
 
-      // Magnetometer with smoothing
       await Magnetometer.setUpdateInterval(100);
       magnetometerSubscription = Magnetometer.addListener((data) => {
         const angle = Math.atan2(data.y, data.x);
         let degrees = angle * (180 / Math.PI);
         degrees = (degrees + 360) % 360;
-
-        // Enhanced smoothing for heading
         setHeading((prevHeading) => {
-          const alpha = 0.1; // Reduced smoothing factor for more stability
+          const alpha = 0.3;
           return prevHeading * (1 - alpha) + degrees * alpha;
         });
       });
 
-      // Location updates with stability checks
       locationSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
-          timeInterval: 1000, // Increased interval for stability
-          distanceInterval: 1, // Increased threshold
+          timeInterval: 500,
+          distanceInterval: 0.5,
         },
         (newLocation) => {
           setLocation(newLocation);
 
           if (targetDevice?.location) {
-            const rawBearing = calculateBearing(
-              newLocation.coords.latitude,
-              newLocation.coords.longitude,
-              targetDevice.location.latitude,
-              targetDevice.location.longitude
-            );
+            const newPoint = {
+              lat: targetDevice.location.latitude,
+              lng: targetDevice.location.longitude,
+            };
 
-            // Apply stability filtering
-            const stableBearing = getStableBearing(rawBearing);
-            setDeviceBearing((prevBearing) => {
-              const alpha = 0.2; // Smooth transition between bearings
-              return prevBearing * (1 - alpha) + stableBearing * alpha;
+            setLocationHistory((prev) => {
+              const newHistory = [...prev, newPoint].slice(-HISTORY_SIZE);
+
+              if (newHistory.length === HISTORY_SIZE) {
+                const center = calculateCircleCenter(newHistory);
+                if (center) {
+                  setCenterPoint(center);
+                  const rawBearing = calculateBearing(
+                    newLocation.coords.latitude,
+                    newLocation.coords.longitude,
+                    center.lat,
+                    center.lng
+                  );
+                  const stableBearing = getStableBearing(rawBearing);
+                  setDeviceBearing(stableBearing);
+                }
+              }
+
+              return newHistory;
             });
           }
         }
@@ -121,12 +175,22 @@ export default function DirectionFinder() {
     };
   }, [targetDevice?.location]);
 
-  // Smoother arrow rotation calculation
+  // Calculate final rotation
   const arrowRotation = (deviceBearing - heading + 360) % 360;
+
+  // Determine if we're close to the center point
+  const isNearby =
+    centerPoint &&
+    location &&
+    calculateDistance(
+      location.coords.latitude,
+      location.coords.longitude,
+      centerPoint.lat,
+      centerPoint.lng
+    ) < PROXIMITY_THRESHOLD;
 
   return (
     <View className="flex-1 items-center justify-center bg-black">
-      {/* Close button */}
       <TouchableOpacity
         onPress={() => router.back()}
         className="absolute top-12 right-4 bg-white/20 p-3 rounded-full"
@@ -134,53 +198,30 @@ export default function DirectionFinder() {
         <Ionicons name="close" size={24} color="white" />
       </TouchableOpacity>
 
-      {/* Direction arrow */}
-      <View style={{ transform: [{ rotate: `${arrowRotation}deg` }] }}>
-        <Ionicons name="arrow-up" size={100} color="white" />
-      </View>
+      {locationHistory.length === HISTORY_SIZE ? (
+        <>
+          <View style={{ transform: [{ rotate: `${arrowRotation}deg` }] }}>
+            {isNearby ? (
+              <View className="bg-blue-500 w-8 h-8 rounded-full" />
+            ) : (
+              <Ionicons name="arrow-up" size={100} color="white" />
+            )}
+          </View>
 
-      <Text className="text-white mt-4">
-        {Math.round(deviceBearing)}° bearing
-      </Text>
+          <Text className="text-white mt-4">
+            {Math.round(deviceBearing)}° bearing
+          </Text>
 
-      {location && (
-        <View className="mt-4">
-          <Text className="text-white text-lg font-bold">Your Location:</Text>
-          <Text className="text-white text-center">
-            Lat: {location.coords.latitude.toFixed(6)}
-          </Text>
-          <Text className="text-white text-center">
-            Lng: {location.coords.longitude.toFixed(6)}
-          </Text>
-          <Text className="text-white text-center mb-4">
-            Accuracy: ±{Math.round(location.coords.accuracy || 0)}m
-          </Text>
-        </View>
-      )}
-
-      {targetDevice && (
-        <View className="mt-4 bg-white/10 p-4 rounded-lg w-[80%]">
-          <Text className="text-white text-lg font-bold">
-            {targetDevice.name}
-          </Text>
-          {targetDevice.location ? (
-            <>
-              <Text className="text-white/80">
-                Lat: {targetDevice.location.latitude.toFixed(6)}
-              </Text>
-              <Text className="text-white/80">
-                Lng: {targetDevice.location.longitude.toFixed(6)}
-              </Text>
-              {targetDevice.distance && (
-                <Text className="text-white/80">
-                  Distance: {Math.round(targetDevice.distance)}m
-                </Text>
-              )}
-            </>
-          ) : (
-            <Text className="text-white/50 italic">Location not available</Text>
+          {centerPoint && (
+            <Text className="text-white/70 mt-2">
+              Center: {centerPoint.lat.toFixed(6)}, {centerPoint.lng.toFixed(6)}
+            </Text>
           )}
-        </View>
+        </>
+      ) : (
+        <Text className="text-white text-lg">
+          Collecting locations ({locationHistory.length}/{HISTORY_SIZE})...
+        </Text>
       )}
     </View>
   );
