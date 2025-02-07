@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   useWindowDimensions,
   Platform,
+  Modal,
 } from "react-native";
 import { useRouter, useLocalSearchParams, Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -25,6 +26,84 @@ import { useDeviceStore } from "../store/deviceStore";
 import { interpolate, Extrapolate } from "react-native-reanimated";
 import { formatDistance } from "@/utils/distanceUnits";
 import { useSettingsStore } from "../store/settingsStore";
+import {
+  useProximityVibration,
+  VibrationManager,
+  VibrationModal,
+} from "./vibration";
+
+function SettingsModal({
+  isVisible,
+  onClose,
+  isDarkMode,
+  onVibrationPress,
+}: {
+  isVisible: boolean;
+  onClose: () => void;
+  isDarkMode: boolean;
+  onVibrationPress: () => void;
+}) {
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={isVisible}
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity className="flex-1" activeOpacity={1} onPress={onClose}>
+        <View className="flex-1 justify-end">
+          <View
+            className={`mx-4 mb-4 rounded-2xl border ${
+              isDarkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            }`}
+          >
+            <View className="p-4">
+              <View className="items-center mb-6">
+                <View className="w-12 h-1 rounded-full bg-gray-300 mb-4" />
+                <Text
+                  className={`text-lg font-semibold ${
+                    isDarkMode ? "text-white" : "text-black"
+                  }`}
+                >
+                  Settings
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={onVibrationPress}
+                className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
+                  isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                }`}
+              >
+                <View className="flex-row items-center">
+                  <Ionicons
+                    name="radio-outline"
+                    size={24}
+                    color={isDarkMode ? "white" : "black"}
+                  />
+                  <Text
+                    className={`ml-3 ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}
+                  >
+                    Vibration Alerts
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={24}
+                  color={isDarkMode ? "white" : "black"}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
 
 export default function DeviceTracker() {
   const router = useRouter();
@@ -38,6 +117,9 @@ export default function DeviceTracker() {
 
   const [isFound, setIsFound] = useState(false);
   const checkScale = useSharedValue(0);
+  const [isVibrationEnabled, setIsVibrationEnabled] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showVibrationModal, setShowVibrationModal] = useState(false);
 
   useEffect(() => {
     if (deviceId) {
@@ -45,6 +127,14 @@ export default function DeviceTracker() {
     }
     return () => setActiveDevice("");
   }, [deviceId]);
+
+  // Initialize vibration monitoring
+  useProximityVibration(deviceId as string);
+
+  // Load initial vibration state
+  useEffect(() => {
+    VibrationManager.isVibrationEnabled().then(setIsVibrationEnabled);
+  }, []);
 
   // Calculate percentage based on distance
   const calculatePercentage = (dist: number) => {
@@ -214,6 +304,11 @@ export default function DeviceTracker() {
       : `${(meters / 1000).toFixed(2)}km`;
   };
 
+  const toggleVibration = async () => {
+    const newState = await VibrationManager.toggleVibration();
+    setIsVibrationEnabled(newState);
+  };
+
   if (!activeDevice) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -256,15 +351,6 @@ export default function DeviceTracker() {
               />
             </TouchableOpacity>
           </Link>
-          <Link href={`/direction_finder?id=${activeDevice.id}`} asChild>
-            <TouchableOpacity className="p-2">
-              <Ionicons
-                name="navigate-outline"
-                size={24}
-                color={isDarkMode ? "#fff" : "#000"}
-              />
-            </TouchableOpacity>
-          </Link>
           <Link href={`/heatmap?id=${activeDevice.id}`} asChild>
             <TouchableOpacity className="p-2">
               <Ionicons
@@ -274,6 +360,16 @@ export default function DeviceTracker() {
               />
             </TouchableOpacity>
           </Link>
+          <TouchableOpacity
+            className="p-2"
+            onPress={() => setShowSettingsModal(true)}
+          >
+            <Ionicons
+              name="menu-outline"
+              size={24}
+              color={isDarkMode ? "#fff" : "#000"}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -436,6 +532,22 @@ export default function DeviceTracker() {
           <Text className="text-white text-lg font-semibold">Found Device</Text>
         </TouchableOpacity>
       </View>
+
+      <SettingsModal
+        isVisible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        isDarkMode={isDarkMode}
+        onVibrationPress={() => {
+          setShowSettingsModal(false);
+          setShowVibrationModal(true);
+        }}
+      />
+
+      <VibrationModal
+        isVisible={showVibrationModal}
+        onClose={() => setShowVibrationModal(false)}
+        isDarkMode={isDarkMode}
+      />
     </View>
   );
 }
