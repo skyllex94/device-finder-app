@@ -120,9 +120,9 @@ export default function HeatmapScreen() {
         <Animated.View
           style={[
             {
-              width: width * 0.9,
-              height: width * 0.9,
-              borderRadius: width * 0.45,
+              width: width * 0.7,
+              height: width * 0.7,
+              borderRadius: width * 0.35,
               position: "absolute",
             },
             pulseStyle,
@@ -131,9 +131,9 @@ export default function HeatmapScreen() {
         <Animated.View
           style={[
             {
-              width: width * 0.7,
-              height: width * 0.7,
-              borderRadius: width * 0.35,
+              width: width * 0.5,
+              height: width * 0.5,
+              borderRadius: width * 0.25,
               position: "absolute",
             },
             innerPulseStyle,
