@@ -13,11 +13,14 @@ import { useSettingsStore } from "../store/settingsStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
+import * as TaskManager from "expo-task-manager";
 
 const VIBRATION_PATTERN = [500, 200, 500]; // vibrate, pause, vibrate (in ms)
 const STORAGE_KEY = "vibration_enabled";
 const DISTANCE_STORAGE_KEY = "vibration_distance";
 const DEFAULT_DISTANCE = 0.5;
+const BACKGROUND_VIBRATION_TASK = "background-vibration-task";
 
 const DISTANCE_PRESETS = {
   close: 0.3, // in meters
@@ -25,52 +28,49 @@ const DISTANCE_PRESETS = {
   far: 3,
 };
 
+TaskManager.defineTask(BACKGROUND_VIBRATION_TASK, async ({ data, error }) => {
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  try {
+    const vibrationEnabled = await VibrationManager.isVibrationEnabled();
+    const deviceId = await AsyncStorage.getItem("tracked_device_id");
+    const storedDistance = await AsyncStorage.getItem(DISTANCE_STORAGE_KEY);
+    const threshold = storedDistance
+      ? parseFloat(storedDistance)
+      : DEFAULT_DISTANCE;
+
+    if (!vibrationEnabled || !deviceId) return;
+
+    const devices = useDeviceStore.getState().devices;
+    const targetDevice = devices.find((d) => d.id === deviceId);
+
+    if (targetDevice?.distance && targetDevice.distance <= threshold) {
+      Vibration.vibrate(VIBRATION_PATTERN);
+    }
+  } catch (error) {
+    console.error("Background vibration task error:", error);
+  }
+});
+
 export function useProximityVibration(deviceId: string | null) {
-  const devices = useDeviceStore((state) => state.devices);
-
   useEffect(() => {
-    let lastVibrationTime = 0;
-    const VIBRATION_COOLDOWN = 3000; // 3 seconds
-
-    const checkProximity = async () => {
-      try {
-        const vibrationEnabled = await AsyncStorage.getItem(STORAGE_KEY);
-        const storedDistance = await AsyncStorage.getItem(DISTANCE_STORAGE_KEY);
-        const threshold = storedDistance
-          ? parseFloat(storedDistance)
-          : DEFAULT_DISTANCE;
-
-        if (vibrationEnabled !== "true" || !deviceId) return;
-
-        const targetDevice = devices.find((d) => d.id === deviceId);
-        if (!targetDevice?.distance) return;
-
-        console.log("Current distance:", targetDevice.distance); // Debug log
-
-        const currentTime = Date.now();
-        const shouldVibrate =
-          targetDevice.distance <= threshold &&
-          currentTime - lastVibrationTime > VIBRATION_COOLDOWN;
-
-        console.log("Should vibrate:", shouldVibrate); // Debug log
-
-        if (shouldVibrate) {
-          console.log("Triggering vibration"); // Debug log
-          Vibration.vibrate(VIBRATION_PATTERN);
-          lastVibrationTime = currentTime;
+    if (deviceId) {
+      AsyncStorage.setItem("tracked_device_id", deviceId);
+      VibrationManager.isVibrationEnabled().then((enabled) => {
+        if (enabled) {
+          VibrationManager.startBackgroundLocation();
         }
-      } catch (error) {
-        console.error("Proximity check error:", error);
-      }
-    };
-
-    const interval = setInterval(checkProximity, 1000);
+      });
+    }
 
     return () => {
-      clearInterval(interval);
-      Vibration.cancel(); // Stop any ongoing vibration
+      AsyncStorage.removeItem("tracked_device_id");
+      VibrationManager.stopBackgroundLocation();
     };
-  }, [deviceId, devices]);
+  }, [deviceId]);
 }
 
 // Helper functions to manage vibration state
@@ -105,16 +105,17 @@ export const VibrationManager = {
   },
 
   async toggleVibration() {
-    try {
-      const currentState = await this.isVibrationEnabled();
-      const newState = !currentState;
-      await AsyncStorage.setItem(STORAGE_KEY, newState.toString());
-      console.log("Vibration toggled to:", newState); // Debug log
-      return newState;
-    } catch (error) {
-      console.error("Error toggling vibration:", error);
-      return false;
+    const currentState = await this.isVibrationEnabled();
+    const newState = !currentState;
+    await AsyncStorage.setItem(STORAGE_KEY, newState.toString());
+
+    if (newState) {
+      await this.startBackgroundLocation();
+    } else {
+      await this.stopBackgroundLocation();
     }
+
+    return newState;
   },
 
   async setVibrationDistance(distance: number) {
@@ -133,6 +134,35 @@ export const VibrationManager = {
     } catch (error) {
       console.error("Error getting vibration distance:", error);
       return DEFAULT_DISTANCE;
+    }
+  },
+
+  async startBackgroundLocation() {
+    const { status } = await Location.requestBackgroundPermissionsAsync();
+    if (status !== "granted") {
+      console.log("Background location permission denied");
+      return false;
+    }
+
+    await Location.startLocationUpdatesAsync(BACKGROUND_VIBRATION_TASK, {
+      accuracy: Location.Accuracy.Balanced,
+      timeInterval: 1000,
+      distanceInterval: 0,
+      foregroundService: {
+        notificationTitle: "Proximity Alert Active",
+        notificationBody: "Monitoring device distance",
+        notificationColor: "#2563eb",
+      },
+    });
+
+    return true;
+  },
+
+  async stopBackgroundLocation() {
+    if (
+      await Location.hasStartedLocationUpdatesAsync(BACKGROUND_VIBRATION_TASK)
+    ) {
+      await Location.stopLocationUpdatesAsync(BACKGROUND_VIBRATION_TASK);
     }
   },
 };
@@ -176,7 +206,7 @@ export function VibrationModal({
   };
 
   const formatDistance = (meters: number) => {
-    if (distanceUnit === "imperial") {
+    if (distanceUnit === "feet") {
       return `${(meters * 3.28084).toFixed(1)} ft`;
     }
     return `${meters.toFixed(1)} m`;

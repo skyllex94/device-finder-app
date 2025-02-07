@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import * as Notifications from "expo-notifications";
+import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDeviceStore } from "../../store/deviceStore";
 import { useSettingsStore } from "../../store/settingsStore";
 import { Platform, Switch, Text, TouchableOpacity } from "react-native";
 import { View } from "@/components/Themed";
 import { Ionicons } from "@expo/vector-icons";
+import * as TaskManager from "expo-task-manager";
 
 const NOTIFICATION_STORAGE_KEY = "notifications_enabled";
 const NOTIFICATION_DISTANCE = 1; // 1 meter trigger distance
@@ -46,6 +48,11 @@ export const NotificationManager = {
       if (!permissionGranted) {
         return false;
       }
+      // Start background location when enabling notifications
+      await this.startBackgroundLocation();
+    } else {
+      // Stop background location when disabling notifications
+      await this.stopBackgroundLocation();
     }
 
     await AsyncStorage.setItem(NOTIFICATION_STORAGE_KEY, newState.toString());
@@ -70,7 +77,74 @@ export const NotificationManager = {
   async removeNotification() {
     await Notifications.dismissNotificationAsync(NOTIFICATION_ID);
   },
+
+  async startBackgroundLocation() {
+    const { status } = await Location.requestBackgroundPermissionsAsync();
+    if (status !== "granted") {
+      console.log("Background location permission denied");
+      return false;
+    }
+
+    await Location.startLocationUpdatesAsync("background-location-task", {
+      accuracy: Location.Accuracy.Balanced,
+      timeInterval: 1000,
+      distanceInterval: 0,
+      foregroundService: {
+        notificationTitle: "Location Tracking Active",
+        notificationBody: "Monitoring device proximity",
+        notificationColor: "#2563eb",
+      },
+    });
+
+    return true;
+  },
+
+  async stopBackgroundLocation() {
+    if (
+      await Location.hasStartedLocationUpdatesAsync("background-location-task")
+    ) {
+      await Location.stopLocationUpdatesAsync("background-location-task");
+    }
+  },
 };
+
+// Define the background task
+TaskManager.defineTask("background-location-task", async ({ data, error }) => {
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  try {
+    const notificationsEnabled =
+      await NotificationManager.isNotificationsEnabled();
+    if (!notificationsEnabled) return;
+
+    const deviceId = await AsyncStorage.getItem("tracked_device_id");
+    if (!deviceId) return;
+
+    const devices = useDeviceStore.getState().devices;
+    const targetDevice = devices.find((d) => d.id === deviceId);
+    const distanceUnit = useSettingsStore.getState().distanceUnit;
+
+    if (
+      targetDevice?.distance &&
+      targetDevice.distance <= NOTIFICATION_DISTANCE
+    ) {
+      const distanceDisplay =
+        distanceUnit === "imperial"
+          ? `${(targetDevice.distance * 3.28084).toFixed(1)} feet`
+          : `${targetDevice.distance.toFixed(1)} meters`;
+
+      await NotificationManager.updateNotification(
+        "Device Nearby",
+        `${targetDevice.name} is ${distanceDisplay} away`
+      );
+    }
+  } catch (error) {
+    console.error("Background task error:", error);
+  }
+});
 
 export function useProximityNotifications(deviceId: string | null) {
   const devices = useDeviceStore((state) => state.devices);
@@ -108,7 +182,7 @@ export function useProximityNotifications(deviceId: string | null) {
       }
     };
 
-    const interval = setInterval(checkProximity, 1000);
+    const interval = setInterval(checkProximity, 3000);
 
     return () => {
       isMounted = false;
