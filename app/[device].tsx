@@ -257,10 +257,10 @@ export default function DeviceTracker() {
             </TouchableOpacity>
           </Link>
 
-          <Link href="/direction_finder" asChild>
+          <Link href={`/direction_finder?id=${activeDevice.id}`} asChild>
             <TouchableOpacity className="p-2">
               <Ionicons
-                name="camera-outline"
+                name="navigate-outline"
                 size={24}
                 color={isDarkMode ? "#fff" : "#000"}
               />
