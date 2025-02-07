@@ -19,6 +19,12 @@ const STORAGE_KEY = "vibration_enabled";
 const DISTANCE_STORAGE_KEY = "vibration_distance";
 const DEFAULT_DISTANCE = 0.5;
 
+const DISTANCE_PRESETS = {
+  close: 0.3, // in meters
+  medium: 1,
+  far: 3,
+};
+
 export function useProximityVibration(deviceId: string | null) {
   const devices = useDeviceStore((state) => state.devices);
 
@@ -140,117 +146,160 @@ export function VibrationModal({
   onClose: () => void;
   isDarkMode: boolean;
 }) {
-  const [isEnabled, setIsEnabled] = useState(false);
-  const [distance, setDistance] = useState("0.5");
+  const [selectedDistance, setSelectedDistance] =
+    useState<keyof typeof DISTANCE_PRESETS>("medium");
   const { distanceUnit } = useSettingsStore();
 
   useEffect(() => {
-    VibrationManager.isVibrationEnabled().then(setIsEnabled);
-    VibrationManager.getVibrationDistance().then((d) =>
-      setDistance(d.toString())
-    );
+    VibrationManager.getVibrationDistance().then((distance) => {
+      // Find closest preset
+      const closest = Object.entries(DISTANCE_PRESETS).reduce(
+        (prev, [key, value]) => {
+          return Math.abs(value - distance) <
+            Math.abs(
+              DISTANCE_PRESETS[prev as keyof typeof DISTANCE_PRESETS] - distance
+            )
+            ? (key as keyof typeof DISTANCE_PRESETS)
+            : prev;
+        },
+        "medium" as keyof typeof DISTANCE_PRESETS
+      );
+      setSelectedDistance(closest);
+    });
   }, []);
 
-  const toggleSwitch = async () => {
-    const newState = await VibrationManager.toggleVibration();
-    setIsEnabled(newState);
+  const handleDistanceSelect = async (
+    preset: keyof typeof DISTANCE_PRESETS
+  ) => {
+    setSelectedDistance(preset);
+    await VibrationManager.setVibrationDistance(DISTANCE_PRESETS[preset]);
   };
 
-  const handleDistanceChange = async (value: string) => {
-    const numValue = parseFloat(value) || DEFAULT_DISTANCE;
-    setDistance(value);
-    await VibrationManager.setVibrationDistance(numValue);
-  };
-
-  const getUnitLabel = () => {
-    return distanceUnit === "imperial" ? "ft" : "m";
-  };
-
-  const getConvertedDistance = () => {
-    const meters = parseFloat(distance);
-    return distanceUnit === "imperial"
-      ? (meters * 3.28084).toFixed(1)
-      : meters.toFixed(1);
+  const formatDistance = (meters: number) => {
+    if (distanceUnit === "imperial") {
+      return `${(meters * 3.28084).toFixed(1)} ft`;
+    }
+    return `${meters.toFixed(1)} m`;
   };
 
   return (
     <Modal
-      animationType="fade"
+      animationType="slide"
       transparent={true}
       visible={isVisible}
       onRequestClose={onClose}
     >
-      <View className="flex-1 justify-center items-center bg-black/50">
-        <View
-          className={`w-[80%] p-6 rounded-2xl ${
-            isDarkMode ? "bg-gray-800" : "bg-white"
-          }`}
-        >
-          <View className="flex-row justify-between items-center mb-4">
-            <Text
-              className={`text-lg font-semibold ${
-                isDarkMode ? "text-white" : "text-black"
-              }`}
-            >
-              Proximity Alert
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <Ionicons
-                name="close"
-                size={24}
-                color={isDarkMode ? "white" : "black"}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <Text
-            className={`mb-4 ${isDarkMode ? "text-white/70" : "text-black/70"}`}
+      <TouchableOpacity className="flex-1" activeOpacity={1} onPress={onClose}>
+        <View className="flex-1 justify-end">
+          <View
+            className={`mx-4 mb-4 rounded-2xl border ${
+              isDarkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
+            }`}
           >
-            Vibrate when device is within {getConvertedDistance()}{" "}
-            {getUnitLabel()}
-          </Text>
+            <View className="p-4">
+              <View className="items-center mb-6">
+                <View className="w-12 h-1 rounded-full bg-gray-300 mb-4" />
+                <Text
+                  className={`text-lg font-semibold ${
+                    isDarkMode ? "text-white" : "text-black"
+                  }`}
+                >
+                  Alert Distance
+                </Text>
+              </View>
 
-          <View className="mb-4">
-            <Text
-              className={`mb-2 ${
-                isDarkMode ? "text-white/70" : "text-black/70"
-              }`}
-            >
-              Alert Distance ({getUnitLabel()})
-            </Text>
-            <TextInput
-              className={`p-2 rounded-lg border ${
-                isDarkMode
-                  ? "border-white/20 text-white bg-gray-700"
-                  : "border-gray-300 text-black bg-gray-100"
-              }`}
-              value={getConvertedDistance()}
-              onChangeText={(value) => {
-                const meters =
-                  distanceUnit === "imperial"
-                    ? parseFloat(value) / 3.28084
-                    : parseFloat(value);
-                handleDistanceChange(meters.toString());
-              }}
-              keyboardType="numeric"
-              placeholder="Enter distance"
-              placeholderTextColor={isDarkMode ? "#9ca3af" : "#6b7280"}
-            />
-          </View>
-
-          <View className="flex-row justify-between items-center">
-            <Text className={`${isDarkMode ? "text-white" : "text-black"}`}>
-              {isEnabled ? "On" : "Off"}
-            </Text>
-            <Switch
-              trackColor={{ false: "#767577", true: "#81b0ff" }}
-              thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
-              onValueChange={toggleSwitch}
-              value={isEnabled}
-            />
+              {Object.entries(DISTANCE_PRESETS).map(([key, value]) => (
+                <TouchableOpacity
+                  key={key}
+                  onPress={() =>
+                    handleDistanceSelect(key as keyof typeof DISTANCE_PRESETS)
+                  }
+                  className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
+                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                  } ${
+                    selectedDistance === key ? "border-2 border-blue-500" : ""
+                  }`}
+                >
+                  <View>
+                    <Text
+                      className={`font-semibold ${
+                        isDarkMode ? "text-white" : "text-black"
+                      }`}
+                    >
+                      {key.charAt(0).toUpperCase() + key.slice(1)} Range
+                    </Text>
+                    <Text
+                      className={`${
+                        isDarkMode ? "text-white/70" : "text-black/70"
+                      }`}
+                    >
+                      Under {formatDistance(value)}
+                    </Text>
+                  </View>
+                  {selectedDistance === key && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color="#3b82f6"
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </Modal>
+  );
+}
+
+// Update SettingsModal component to include switch
+export function SettingsVibrationOption({
+  isDarkMode,
+  onPress,
+}: {
+  isDarkMode: boolean;
+  onPress: () => void;
+}) {
+  const [isEnabled, setIsEnabled] = useState(false);
+
+  useEffect(() => {
+    VibrationManager.isVibrationEnabled().then(setIsEnabled);
+  }, []);
+
+  const toggleVibration = async () => {
+    const newState = await VibrationManager.toggleVibration();
+    setIsEnabled(newState);
+    if (newState) {
+      onPress(); // Open distance settings when enabling
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={toggleVibration}
+      className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
+        isDarkMode ? "bg-gray-700" : "bg-gray-100"
+      }`}
+    >
+      <View className="flex-row items-center">
+        <Ionicons
+          name="radio-outline"
+          size={24}
+          color={isDarkMode ? "white" : "black"}
+        />
+        <Text className={`ml-3 ${isDarkMode ? "text-white" : "text-black"}`}>
+          Vibration Alerts
+        </Text>
+      </View>
+      <Switch
+        trackColor={{ false: "#767577", true: "#81b0ff" }}
+        thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
+        onValueChange={toggleVibration}
+        value={isEnabled}
+      />
+    </TouchableOpacity>
   );
 }

@@ -31,6 +31,11 @@ import {
   VibrationManager,
   VibrationModal,
 } from "./vibration";
+import { SettingsVibrationOption } from "./vibration";
+import {
+  NotificationOption,
+  useProximityNotifications,
+} from "./alerts/notifications";
 
 function SettingsModal({
   isVisible,
@@ -71,32 +76,12 @@ function SettingsModal({
                 </Text>
               </View>
 
-              <TouchableOpacity
+              <SettingsVibrationOption
+                isDarkMode={isDarkMode}
                 onPress={onVibrationPress}
-                className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
-                  isDarkMode ? "bg-gray-700" : "bg-gray-100"
-                }`}
-              >
-                <View className="flex-row items-center">
-                  <Ionicons
-                    name="radio-outline"
-                    size={24}
-                    color={isDarkMode ? "white" : "black"}
-                  />
-                  <Text
-                    className={`ml-3 ${
-                      isDarkMode ? "text-white" : "text-black"
-                    }`}
-                  >
-                    Vibration Alerts
-                  </Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={24}
-                  color={isDarkMode ? "white" : "black"}
-                />
-              </TouchableOpacity>
+              />
+
+              <NotificationOption isDarkMode={isDarkMode} />
             </View>
           </View>
         </View>
@@ -135,6 +120,9 @@ export default function DeviceTracker() {
   useEffect(() => {
     VibrationManager.isVibrationEnabled().then(setIsVibrationEnabled);
   }, []);
+
+  // Add notification monitoring
+  useProximityNotifications(deviceId as string);
 
   // Calculate percentage based on distance
   const calculatePercentage = (dist: number) => {
