@@ -42,12 +42,23 @@ function SettingsModal({
   onClose,
   isDarkMode,
   onVibrationPress,
+  activeDevice,
 }: {
   isVisible: boolean;
   onClose: () => void;
   isDarkMode: boolean;
   onVibrationPress: () => void;
+  activeDevice: any;
 }) {
+  const router = useRouter();
+
+  const handleNavigation = (path: `/${string}`) => {
+    onClose();
+    setTimeout(() => {
+      router.push(path);
+    }, 100);
+  };
+
   return (
     <Modal
       animationType="slide"
@@ -64,24 +75,87 @@ function SettingsModal({
                 : "bg-white border-gray-200"
             }`}
           >
-            <View className="p-4">
-              <View className="items-center mb-6">
-                <View className="w-12 h-1 rounded-full bg-gray-300 mb-4" />
+            <View className="p-3">
+              {/* Navigation Group */}
+              <View className="mb-4">
                 <Text
-                  className={`text-lg font-semibold ${
-                    isDarkMode ? "text-white" : "text-black"
+                  className={`text-xs font-medium mb-1.5 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
-                  Settings
+                  Navigation
                 </Text>
+                <TouchableOpacity
+                  onPress={() => handleNavigation(`/map?id=${activeDevice.id}`)}
+                  className={`py-3 px-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
+                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                  }`}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons
+                      name="map-outline"
+                      size={20}
+                      color={isDarkMode ? "white" : "black"}
+                    />
+                    <Text
+                      className={`ml-2.5 ${
+                        isDarkMode ? "text-white" : "text-black"
+                      }`}
+                    >
+                      Map View
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={isDarkMode ? "white" : "black"}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() =>
+                    handleNavigation(`/heatmap?id=${activeDevice.id}`)
+                  }
+                  className={`py-3 px-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
+                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                  }`}
+                >
+                  <View className="flex-row items-center">
+                    <Ionicons
+                      name="radio-outline"
+                      size={20}
+                      color={isDarkMode ? "white" : "black"}
+                    />
+                    <Text
+                      className={`ml-2.5 ${
+                        isDarkMode ? "text-white" : "text-black"
+                      }`}
+                    >
+                      Signal Heatmap
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={isDarkMode ? "white" : "black"}
+                  />
+                </TouchableOpacity>
               </View>
 
-              <SettingsVibrationOption
-                isDarkMode={isDarkMode}
-                onPress={onVibrationPress}
-              />
-
-              <NotificationOption isDarkMode={isDarkMode} />
+              {/* Background Alerts Group */}
+              <View>
+                <Text
+                  className={`text-xs font-medium mb-1.5 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  Background Alerts
+                </Text>
+                <SettingsVibrationOption
+                  isDarkMode={isDarkMode}
+                  onPress={onVibrationPress}
+                />
+                <NotificationOption isDarkMode={isDarkMode} />
+              </View>
             </View>
           </View>
         </View>
@@ -292,11 +366,6 @@ export default function DeviceTracker() {
       : `${(meters / 1000).toFixed(2)}km`;
   };
 
-  const toggleVibration = async () => {
-    const newState = await VibrationManager.toggleVibration();
-    setIsVibrationEnabled(newState);
-  };
-
   if (!activeDevice) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -329,36 +398,16 @@ export default function DeviceTracker() {
           </Text>
         </View>
 
-        <View className="flex-row space-x-2">
-          <Link href={`/map?id=${activeDevice.id}`} asChild>
-            <TouchableOpacity className="p-2">
-              <Ionicons
-                name="map-outline"
-                size={24}
-                color={isDarkMode ? "#fff" : "#000"}
-              />
-            </TouchableOpacity>
-          </Link>
-          <Link href={`/heatmap?id=${activeDevice.id}`} asChild>
-            <TouchableOpacity className="p-2">
-              <Ionicons
-                name="radio-outline"
-                size={24}
-                color={isDarkMode ? "#fff" : "#000"}
-              />
-            </TouchableOpacity>
-          </Link>
-          <TouchableOpacity
-            className="p-2"
-            onPress={() => setShowSettingsModal(true)}
-          >
-            <Ionicons
-              name="menu-outline"
-              size={24}
-              color={isDarkMode ? "#fff" : "#000"}
-            />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          className="p-2"
+          onPress={() => setShowSettingsModal(true)}
+        >
+          <Ionicons
+            name="menu-outline"
+            size={24}
+            color={isDarkMode ? "#fff" : "#000"}
+          />
+        </TouchableOpacity>
       </View>
 
       <View className="flex-1 items-center justify-center">
@@ -529,6 +578,7 @@ export default function DeviceTracker() {
           setShowSettingsModal(false);
           setShowVibrationModal(true);
         }}
+        activeDevice={activeDevice}
       />
 
       <VibrationModal

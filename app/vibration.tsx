@@ -6,13 +6,12 @@ import {
   TouchableOpacity,
   Text,
   Switch,
-  TextInput,
 } from "react-native";
 import { useDeviceStore } from "../store/deviceStore";
 import { useSettingsStore } from "../store/settingsStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 
@@ -23,7 +22,7 @@ const DEFAULT_DISTANCE = 0.5;
 const BACKGROUND_VIBRATION_TASK = "background-vibration-task";
 
 const DISTANCE_PRESETS = {
-  close: 0.3, // in meters
+  close: 0.5, // in meters
   medium: 1,
   far: 3,
 };
@@ -167,6 +166,13 @@ export const VibrationManager = {
   },
 };
 
+export const formatDistance = (meters: number, unit: string) => {
+  if (unit === "automatic" || unit === "feet") {
+    return `${(meters * 3.28084).toFixed(1)} ft`;
+  }
+  return `${meters.toFixed(1)} m`;
+};
+
 export function VibrationModal({
   isVisible,
   onClose,
@@ -203,13 +209,6 @@ export function VibrationModal({
   ) => {
     setSelectedDistance(preset);
     await VibrationManager.setVibrationDistance(DISTANCE_PRESETS[preset]);
-  };
-
-  const formatDistance = (meters: number) => {
-    if (distanceUnit === "feet") {
-      return `${(meters * 3.28084).toFixed(1)} ft`;
-    }
-    return `${meters.toFixed(1)} m`;
   };
 
   return (
@@ -265,7 +264,7 @@ export function VibrationModal({
                         isDarkMode ? "text-white/70" : "text-black/70"
                       }`}
                     >
-                      Under {formatDistance(value)}
+                      Under {formatDistance(value, distanceUnit)}
                     </Text>
                   </View>
                   {selectedDistance === key && (
@@ -310,21 +309,23 @@ export function SettingsVibrationOption({
   return (
     <TouchableOpacity
       onPress={toggleVibration}
-      className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
+      className={`py-1.5 px-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
         isDarkMode ? "bg-gray-700" : "bg-gray-100"
       }`}
     >
       <View className="flex-row items-center">
-        <Ionicons
-          name="radio-outline"
-          size={24}
+        <MaterialCommunityIcons
+          name="vibrate"
+          size={20}
           color={isDarkMode ? "white" : "black"}
         />
-        <Text className={`ml-3 ${isDarkMode ? "text-white" : "text-black"}`}>
-          Vibration Alerts
+
+        <Text className={`ml-2 ${isDarkMode ? "text-white" : "text-black"}`}>
+          Vibration
         </Text>
       </View>
       <Switch
+        style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
         trackColor={{ false: "#767577", true: "#81b0ff" }}
         thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
         onValueChange={toggleVibration}

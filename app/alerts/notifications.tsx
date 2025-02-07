@@ -4,10 +4,11 @@ import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDeviceStore } from "../../store/deviceStore";
 import { useSettingsStore } from "../../store/settingsStore";
-import { Platform, Switch, Text, TouchableOpacity } from "react-native";
-import { View } from "@/components/Themed";
+import { Platform, Switch, Text, TouchableOpacity, View } from "react-native";
+
 import { Ionicons } from "@expo/vector-icons";
 import * as TaskManager from "expo-task-manager";
+import { formatDistance } from "../vibration"; // Import the shared function
 
 const NOTIFICATION_STORAGE_KEY = "notifications_enabled";
 const NOTIFICATION_DISTANCE = 1; // 1 meter trigger distance
@@ -132,8 +133,8 @@ TaskManager.defineTask("background-location-task", async ({ data, error }) => {
       targetDevice.distance <= NOTIFICATION_DISTANCE
     ) {
       const distanceDisplay =
-        distanceUnit === "imperial"
-          ? `${(targetDevice.distance * 3.28084).toFixed(1)} feet`
+        distanceUnit === "feet" || "automatic"
+          ? `${(targetDevice.distance * 3.28084).toFixed(1)} ft`
           : `${targetDevice.distance.toFixed(1)} meters`;
 
       await NotificationManager.updateNotification(
@@ -150,45 +151,42 @@ export function useProximityNotifications(deviceId: string | null) {
   const devices = useDeviceStore((state) => state.devices);
   const { distanceUnit } = useSettingsStore();
 
-  useEffect(() => {
-    let isMounted = true;
+  // useEffect(() => {
+  //   const checkProximity = async () => {
+  //     try {
+  //       const notificationsEnabled =
+  //         await NotificationManager.isNotificationsEnabled();
+  //       if (!notificationsEnabled || !deviceId) return;
 
-    const checkProximity = async () => {
-      try {
-        if (!isMounted) return;
+  //       const targetDevice = devices.find((d) => d.id === deviceId);
+  //       if (!targetDevice?.distance) return;
 
-        const notificationsEnabled =
-          await NotificationManager.isNotificationsEnabled();
-        if (!notificationsEnabled || !deviceId) return;
+  //       const isInRange = targetDevice.distance <= NOTIFICATION_DISTANCE;
 
-        const targetDevice = devices.find((d) => d.id === deviceId);
-        if (!targetDevice?.distance) return;
+  //       if (isInRange) {
+  //         await Notifications.scheduleNotificationAsync({
+  //           content: {
+  //             title: "Device Nearby FORE",
+  //             body: `${targetDevice.name} is ${formatDistance(
+  //               targetDevice.distance,
+  //               distanceUnit
+  //             )} away`,
+  //           },
+  //           trigger: null,
+  //           identifier: NOTIFICATION_ID,
+  //         });
+  //       }
+  //     } catch (error) {
+  //       console.error("Notification check error:", error);
+  //     }
+  //   };
 
-        const isInRange = targetDevice.distance <= NOTIFICATION_DISTANCE;
+  //   const interval = setInterval(checkProximity, 3000);
 
-        if (isInRange) {
-          const distanceDisplay =
-            distanceUnit === "imperial"
-              ? `${(targetDevice.distance * 3.28084).toFixed(1)} feet`
-              : `${targetDevice.distance.toFixed(1)} meters`;
-
-          await NotificationManager.updateNotification(
-            "Device Nearby",
-            `${targetDevice.name} is ${distanceDisplay} away`
-          );
-        }
-      } catch (error) {
-        console.error("Notification check error:", error);
-      }
-    };
-
-    const interval = setInterval(checkProximity, 3000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [deviceId, devices, distanceUnit]);
+  //   return () => {
+  //     clearInterval(interval);
+  //   };
+  // }, [deviceId, devices, distanceUnit]);
 }
 
 export function NotificationOption({ isDarkMode }: { isDarkMode: boolean }) {
@@ -206,21 +204,24 @@ export function NotificationOption({ isDarkMode }: { isDarkMode: boolean }) {
   return (
     <TouchableOpacity
       onPress={toggleNotifications}
-      className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
+      className={`py-1.5 px-3 rounded-lg mb-2 flex-row items-center justify-between ${
         isDarkMode ? "bg-gray-700" : "bg-gray-100"
       }`}
     >
       <View className="flex-row items-center">
         <Ionicons
           name="notifications-outline"
-          size={24}
+          size={20}
           color={isDarkMode ? "white" : "black"}
         />
-        <Text className={`ml-3 ${isDarkMode ? "text-white" : "text-black"}`}>
-          Proximity Notifications
+
+        <Text className={`ml-2 ${isDarkMode ? "text-white" : "text-black"}`}>
+          Notifications
         </Text>
       </View>
+
       <Switch
+        style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
         trackColor={{ false: "#767577", true: "#81b0ff" }}
         thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
         onValueChange={toggleNotifications}

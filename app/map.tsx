@@ -126,7 +126,7 @@ export default function MapScreen() {
       </MapView>
 
       {/* Debug info panel */}
-      <View className="absolute top-14 left-4 bg-black/50 p-2 rounded">
+      <View className="absolute top-4 left-4 bg-black/50 p-2 rounded">
         <Text className="text-white">Devices: {devices.length}</Text>
         <Text className="text-white">
           With Location: {devices.filter((d) => d.location).length}
@@ -140,7 +140,7 @@ export default function MapScreen() {
 
       <TouchableOpacity
         onPress={() => router.back()}
-        className="absolute top-14 right-4 bg-black/50 p-3 rounded-full"
+        className="absolute top-4 right-4 bg-black/50 p-3 rounded-full"
       >
         <Ionicons name="close" size={24} color="white" />
       </TouchableOpacity>
