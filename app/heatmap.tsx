@@ -6,6 +6,8 @@ import { useDeviceStore } from "../store/deviceStore";
 import Animated, {
   useAnimatedStyle,
   withSpring,
+  withRepeat,
+  withSequence,
   interpolateColor,
 } from "react-native-reanimated";
 import { useThemeStore } from "../components/Themed";
@@ -17,7 +19,7 @@ export default function HeatmapScreen() {
   const [signalStrength, setSignalStrength] = useState(0);
   const devices = useDeviceStore((state) => state.devices);
   const targetDevice = devices.find((d) => d.id === id);
-  const { width, height } = Dimensions.get("window");
+  const { width } = Dimensions.get("window");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -38,19 +40,51 @@ export default function HeatmapScreen() {
     return {
       transform: [
         {
-          scale: withSpring(1 + signalStrength * 0.5, {
-            damping: 10,
-            stiffness: 100,
-          }),
+          scale: withRepeat(
+            withSequence(
+              withSpring(1 + signalStrength * 0.3),
+              withSpring(1 + signalStrength * 0.5)
+            ),
+            -1,
+            true
+          ),
         },
       ],
       backgroundColor: interpolateColor(
         signalStrength,
-        [0, 0.5, 1],
+        [0, 0.3, 0.6, 1],
+        [
+          "rgba(59, 130, 246, 0.1)",
+          "rgba(147, 51, 234, 0.2)",
+          "rgba(239, 68, 68, 0.3)",
+          "rgba(239, 68, 68, 0.4)",
+        ]
+      ),
+    };
+  });
+
+  const innerPulseStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          scale: withRepeat(
+            withSequence(
+              withSpring(1 + signalStrength * 0.2),
+              withSpring(1 + signalStrength * 0.4)
+            ),
+            -1,
+            true
+          ),
+        },
+      ],
+      backgroundColor: interpolateColor(
+        signalStrength,
+        [0, 0.3, 0.6, 1],
         [
           "rgba(59, 130, 246, 0.2)",
-          "rgba(59, 130, 246, 0.5)",
-          "rgba(59, 130, 246, 0.8)",
+          "rgba(147, 51, 234, 0.3)",
+          "rgba(239, 68, 68, 0.4)",
+          "rgba(239, 68, 68, 0.5)",
         ]
       ),
     };
@@ -62,6 +96,11 @@ export default function HeatmapScreen() {
     if (signalStrength > 0.4) return "Moderate Signal";
     if (signalStrength > 0.2) return "Weak Signal";
     return "Very Weak Signal";
+  };
+
+  const getSignalLabel = () => {
+    const rssi = -100 + signalStrength * 60; // Convert to approximate RSSI (-100 to -40)
+    return `${Math.round(rssi)} dBm`;
   };
 
   return (
@@ -81,12 +120,23 @@ export default function HeatmapScreen() {
         <Animated.View
           style={[
             {
-              width: width * 0.8,
-              height: width * 0.8,
-              borderRadius: width * 0.4,
+              width: width * 0.9,
+              height: width * 0.9,
+              borderRadius: width * 0.45,
               position: "absolute",
             },
             pulseStyle,
+          ]}
+        />
+        <Animated.View
+          style={[
+            {
+              width: width * 0.7,
+              height: width * 0.7,
+              borderRadius: width * 0.35,
+              position: "absolute",
+            },
+            innerPulseStyle,
           ]}
         />
 
@@ -99,11 +149,19 @@ export default function HeatmapScreen() {
         </Text>
 
         <Text
-          className={`text-4xl font-bold ${
+          className={`text-4xl font-bold mb-2 ${
             isDarkMode ? "text-white" : "text-black"
           }`}
         >
           {Math.round(signalStrength * 100)}%
+        </Text>
+
+        <Text
+          className={`text-xl ${
+            isDarkMode ? "text-white/70" : "text-black/70"
+          }`}
+        >
+          {getSignalLabel()}
         </Text>
 
         {targetDevice?.distance && (
