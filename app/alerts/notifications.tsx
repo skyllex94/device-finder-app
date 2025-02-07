@@ -40,28 +40,31 @@ export const NotificationManager = {
   async toggleNotifications() {
     const currentState = await this.isNotificationsEnabled();
     const newState = !currentState;
-    await AsyncStorage.setItem(NOTIFICATION_STORAGE_KEY, newState.toString());
 
     if (newState) {
       const permissionGranted = await this.requestPermissions();
       if (!permissionGranted) {
-        await this.disableNotifications();
         return false;
       }
     }
 
+    await AsyncStorage.setItem(NOTIFICATION_STORAGE_KEY, newState.toString());
     return newState;
   },
 
   async updateNotification(title: string, body: string) {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-      },
-      trigger: null,
-      identifier: NOTIFICATION_ID,
-    });
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+        },
+        trigger: null,
+        identifier: NOTIFICATION_ID,
+      });
+    } catch (error) {
+      console.error("Error updating notification:", error);
+    }
   },
 
   async removeNotification() {
@@ -74,8 +77,12 @@ export function useProximityNotifications(deviceId: string | null) {
   const { distanceUnit } = useSettingsStore();
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkProximity = async () => {
       try {
+        if (!isMounted) return;
+
         const notificationsEnabled =
           await NotificationManager.isNotificationsEnabled();
         if (!notificationsEnabled || !deviceId) return;
@@ -104,6 +111,7 @@ export function useProximityNotifications(deviceId: string | null) {
     const interval = setInterval(checkProximity, 1000);
 
     return () => {
+      isMounted = false;
       clearInterval(interval);
     };
   }, [deviceId, devices, distanceUnit]);
