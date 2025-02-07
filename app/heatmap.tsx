@@ -8,6 +8,7 @@ import Animated, {
   withSpring,
   withRepeat,
   withSequence,
+  withTiming,
   interpolateColor,
 } from "react-native-reanimated";
 import { useThemeStore } from "../components/Themed";
@@ -24,7 +25,6 @@ export default function HeatmapScreen() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (targetDevice?.distance) {
-        // Convert distance to signal strength (0-1)
         const strength = Math.max(
           0,
           Math.min(1, 1 - targetDevice.distance / 20)
@@ -36,20 +36,22 @@ export default function HeatmapScreen() {
     return () => clearInterval(interval);
   }, [targetDevice]);
 
-  const pulseStyle = useAnimatedStyle(() => {
+  const outerPulseStyle = useAnimatedStyle(() => {
     return {
       transform: [
         {
           scale: withRepeat(
             withSequence(
               withSpring(1 + signalStrength * 0.3),
-              withSpring(1 + signalStrength * 0.5)
+              withSpring(1 + signalStrength * 0.5),
+              withSpring(1 + signalStrength * 0.4)
             ),
             -1,
             true
           ),
         },
       ],
+      opacity: withTiming(0.6 + signalStrength * 0.4),
       backgroundColor: interpolateColor(
         signalStrength,
         [0, 0.3, 0.6, 1],
@@ -63,20 +65,22 @@ export default function HeatmapScreen() {
     };
   });
 
-  const innerPulseStyle = useAnimatedStyle(() => {
+  const middlePulseStyle = useAnimatedStyle(() => {
     return {
       transform: [
         {
           scale: withRepeat(
             withSequence(
               withSpring(1 + signalStrength * 0.2),
-              withSpring(1 + signalStrength * 0.4)
+              withSpring(1 + signalStrength * 0.4),
+              withSpring(1 + signalStrength * 0.3)
             ),
             -1,
             true
           ),
         },
       ],
+      opacity: withTiming(0.7 + signalStrength * 0.3),
       backgroundColor: interpolateColor(
         signalStrength,
         [0, 0.3, 0.6, 1],
@@ -85,6 +89,35 @@ export default function HeatmapScreen() {
           "rgba(147, 51, 234, 0.3)",
           "rgba(239, 68, 68, 0.4)",
           "rgba(239, 68, 68, 0.5)",
+        ]
+      ),
+    };
+  });
+
+  const innerPulseStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          scale: withRepeat(
+            withSequence(
+              withSpring(1 + signalStrength * 0.1),
+              withSpring(1 + signalStrength * 0.3),
+              withSpring(1 + signalStrength * 0.2)
+            ),
+            -1,
+            true
+          ),
+        },
+      ],
+      opacity: withTiming(0.8 + signalStrength * 0.2),
+      backgroundColor: interpolateColor(
+        signalStrength,
+        [0, 0.3, 0.6, 1],
+        [
+          "rgba(59, 130, 246, 0.3)",
+          "rgba(147, 51, 234, 0.4)",
+          "rgba(239, 68, 68, 0.5)",
+          "rgba(239, 68, 68, 0.6)",
         ]
       ),
     };
@@ -99,15 +132,19 @@ export default function HeatmapScreen() {
   };
 
   const getSignalLabel = () => {
-    const rssi = -100 + signalStrength * 60; // Convert to approximate RSSI (-100 to -40)
+    const rssi = -100 + signalStrength * 60;
     return `${Math.round(rssi)} dBm`;
   };
 
   return (
-    <View className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}>
+    <View
+      className={`flex-1 items-center justify-center ${
+        isDarkMode ? "bg-black" : "bg-white"
+      }`}
+    >
       <TouchableOpacity
         onPress={() => router.back()}
-        className="absolute top-12 right-4 z-10 bg-white/20 p-3 rounded-full"
+        className="absolute top-4 right-4 z-10 bg-white/20 p-3 rounded-full"
       >
         <Ionicons
           name="close"
@@ -116,61 +153,130 @@ export default function HeatmapScreen() {
         />
       </TouchableOpacity>
 
+      <Text
+        className={`absolute top-8 text-xl font-bold ${
+          isDarkMode ? "text-white" : "text-black"
+        }`}
+      >
+        {getSignalText()}
+      </Text>
+
       <View className="flex-1 items-center justify-center">
         <Animated.View
           style={[
             {
-              width: width * 0.7,
-              height: width * 0.7,
-              borderRadius: width * 0.35,
+              width: width * 0.6,
+              height: width * 0.6,
+              borderRadius: width * 0.3,
               position: "absolute",
             },
-            pulseStyle,
+            outerPulseStyle,
           ]}
         />
         <Animated.View
           style={[
             {
-              width: width * 0.5,
-              height: width * 0.5,
-              borderRadius: width * 0.25,
+              width: width * 0.4,
+              height: width * 0.4,
+              borderRadius: width * 0.2,
+              position: "absolute",
+            },
+            middlePulseStyle,
+          ]}
+        />
+        <Animated.View
+          style={[
+            {
+              width: width * 0.2,
+              height: width * 0.2,
+              borderRadius: width * 0.1,
               position: "absolute",
             },
             innerPulseStyle,
           ]}
         />
 
-        <Text
-          className={`text-2xl font-bold mb-4 ${
-            isDarkMode ? "text-white" : "text-black"
-          }`}
-        >
-          {getSignalText()}
-        </Text>
-
-        <Text
-          className={`text-4xl font-bold mb-2 ${
+        {/* <Text
+          className={`text-3xl font-bold mb-1 ${
             isDarkMode ? "text-white" : "text-black"
           }`}
         >
           {Math.round(signalStrength * 100)}%
-        </Text>
+        </Text> */}
 
-        <Text
-          className={`text-xl ${
-            isDarkMode ? "text-white/70" : "text-black/70"
+        {/* Device Information Card */}
+        <View
+          className={`absolute bottom-8 w-[85%] p-4 rounded-2xl ${
+            isDarkMode
+              ? "bg-white/10 border border-white/20"
+              : "bg-black/5 border border-black/10"
           }`}
         >
-          {getSignalLabel()}
-        </Text>
-
-        {targetDevice?.distance && (
           <Text
-            className={`mt-4 ${isDarkMode ? "text-white/70" : "text-black/70"}`}
+            className={`text-lg font-semibold mb-2 ${
+              isDarkMode ? "text-white" : "text-black"
+            }`}
           >
-            Distance: {targetDevice.distance.toFixed(1)}m
+            Device Details
           </Text>
-        )}
+
+          <View className="space-y-2">
+            {targetDevice && (
+              <>
+                <View className="flex-row justify-between">
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-white/70" : "text-black/70"
+                    }`}
+                  >
+                    Name
+                  </Text>
+                  <Text
+                    className={`font-medium ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {targetDevice.name}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-white/70" : "text-black/70"
+                    }`}
+                  >
+                    Signal Strength
+                  </Text>
+                  <Text
+                    className={`font-medium ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {getSignalLabel()}
+                  </Text>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-white/70" : "text-black/70"
+                    }`}
+                  >
+                    Last Updated
+                  </Text>
+                  <Text
+                    className={`font-medium ${
+                      isDarkMode ? "text-white" : "text-black"
+                    }`}
+                  >
+                    {new Date(targetDevice.lastSeen).toLocaleTimeString()}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
       </View>
     </View>
   );
