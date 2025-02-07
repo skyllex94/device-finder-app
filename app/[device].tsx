@@ -246,15 +246,27 @@ export default function DeviceTracker() {
           </Text>
         </View>
 
-        <Link href="/map" asChild>
-          <TouchableOpacity className="p-2">
-            <Ionicons
-              name="map-outline"
-              size={24}
-              color={isDarkMode ? "#fff" : "#000"}
-            />
-          </TouchableOpacity>
-        </Link>
+        <View className="flex-row space-x-2">
+          <Link href="/map" asChild>
+            <TouchableOpacity className="p-2">
+              <Ionicons
+                name="map-outline"
+                size={24}
+                color={isDarkMode ? "#fff" : "#000"}
+              />
+            </TouchableOpacity>
+          </Link>
+
+          <Link href="/direction_finder" asChild>
+            <TouchableOpacity className="p-2">
+              <Ionicons
+                name="camera-outline"
+                size={24}
+                color={isDarkMode ? "#fff" : "#000"}
+              />
+            </TouchableOpacity>
+          </Link>
+        </View>
       </View>
 
       <View className="flex-1 items-center justify-center">

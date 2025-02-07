@@ -74,6 +74,12 @@
           "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos to your photo library.",
           "isAccessMediaLocationEnabled": true
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+        }
       ]
     ],
     "experiments": {
