@@ -69,7 +69,7 @@ function SettingsModal({
       <TouchableOpacity className="flex-1" activeOpacity={1} onPress={onClose}>
         <View className="flex-1 justify-end">
           <View
-            className={`mx-4 mb-4 rounded-2xl border ${
+            className={`mx-4 mb-6 rounded-2xl border ${
               isDarkMode
                 ? "bg-gray-800 border-gray-700"
                 : "bg-white border-gray-200"
@@ -77,7 +77,7 @@ function SettingsModal({
           >
             <View className="p-3">
               {/* Navigation Group */}
-              <View className="mb-4">
+              <View className="mb-2">
                 <Text
                   className={`text-xs font-medium mb-1.5 ${
                     isDarkMode ? "text-gray-400" : "text-gray-500"
@@ -87,7 +87,7 @@ function SettingsModal({
                 </Text>
                 <TouchableOpacity
                   onPress={() => handleNavigation(`/map?id=${activeDevice.id}`)}
-                  className={`py-3 px-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
+                  className={`p-3.5 rounded-lg mb-1.5 flex-row items-center justify-between ${
                     isDarkMode ? "bg-gray-700" : "bg-gray-100"
                   }`}
                 >
@@ -115,7 +115,7 @@ function SettingsModal({
                   onPress={() =>
                     handleNavigation(`/heatmap?id=${activeDevice.id}`)
                   }
-                  className={`py-3 px-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
+                  className={`p-3.5 rounded-lg mb-1.5 flex-row items-center justify-between ${
                     isDarkMode ? "bg-gray-700" : "bg-gray-100"
                   }`}
                 >

@@ -244,7 +244,7 @@ export function VibrationModal({
                   onPress={() =>
                     handleDistanceSelect(key as keyof typeof DISTANCE_PRESETS)
                   }
-                  className={`px-4 py-3 rounded-lg mb-2 flex-row items-center justify-between ${
+                  className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
                     isDarkMode ? "bg-gray-700" : "bg-gray-100"
                   } ${
                     selectedDistance === key ? "border-2 border-blue-500" : ""
@@ -308,7 +308,7 @@ export function SettingsVibrationOption({
   return (
     <TouchableOpacity
       onPress={toggleVibration}
-      className={`py-1.5 px-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
+      className={`py-2 pl-5 pr-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
         isDarkMode ? "bg-gray-700" : "bg-gray-100"
       }`}
     >

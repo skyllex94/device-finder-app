@@ -204,7 +204,7 @@ export function NotificationOption({ isDarkMode }: { isDarkMode: boolean }) {
   return (
     <TouchableOpacity
       onPress={toggleNotifications}
-      className={`py-1.5 px-3 rounded-lg mb-2 flex-row items-center justify-between ${
+      className={`py-2 pl-5 pr-3 rounded-lg mb-2 flex-row items-center justify-between ${
         isDarkMode ? "bg-gray-700" : "bg-gray-100"
       }`}
     >

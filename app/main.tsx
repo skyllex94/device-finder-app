@@ -193,10 +193,12 @@ const SearchModal = React.memo(
       onRequestClose={onClose}
     >
       <TouchableOpacity className="flex-1" activeOpacity={1} onPress={onClose}>
-        <View className="flex-1 bg-black/50 justify-end">
+        <View className="flex-1 justify-end">
           <View
-            className={`mx-4 mb-4 rounded-2xl ${
-              isDarkMode ? "bg-gray-800" : "bg-white"
+            className={`mx-4 mb-6 rounded-2xl border ${
+              isDarkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
             }`}
             style={{ height: height * 0.4 }}
           >
@@ -211,16 +213,16 @@ const SearchModal = React.memo(
 export default function MainScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const [myDevices, setMyDevices] = useState<Device[]>([]);
+
   const [otherDevices, setOtherDevices] = useState<Device[]>([]);
   const { isDarkMode, toggleTheme } = useThemeStore();
   const [isSearching, setIsSearching] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+
   const [currentLocation, setCurrentLocation] =
     useState<Location.LocationObject | null>(null);
   const [savedDevices, setSavedDevices] = useState<SavedDevice[]>([]);
   const [isAddingDevice, setIsAddingDevice] = useState(false);
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+
   const [isFilteringDevices, setIsFilteringDevices] = useState(false);
   const { distanceUnit } = useSettingsStore();
 
@@ -635,21 +637,23 @@ export default function MainScreen() {
               Distance: {formatDistance(device.distance)}{" "}
               {getDistanceIndicator(device)}
             </Text>
-            <Text className="text-xs text-gray-400">
+            {/* <Text className="text-xs text-gray-400">
               {" "}
               {device.lastSeen && `Updating Now`}
-            </Text>
+            </Text> */}
           </View>
         )}
       </View>
-      <View className="items-end">
+      <View className="items-end w-12">
         <Ionicons
           name="chevron-forward"
           size={24}
           color={isDarkMode ? "#9CA3AF" : "#4B5563"}
         />
         {device.distance && device.distance < 2 && (
-          <Text className="text-xs text-green-500 mt-1">Nearby!</Text>
+          <Text className="absolute top-6 w-full text-xs text-green-500 mt-1">
+            Nearby
+          </Text>
         )}
       </View>
     </TouchableOpacity>
@@ -728,16 +732,17 @@ export default function MainScreen() {
         activeOpacity={1}
         onPress={() => setIsAddingDevice(false)}
       >
-        <View className="flex-1 bg-black/50 justify-end">
+        <View className="flex-1 justify-end">
           <View
-            className={`mx-4 mb-4 rounded-2xl ${
-              isDarkMode ? "bg-gray-800" : "bg-white"
+            className={`mx-4 mb-6 rounded-2xl border ${
+              isDarkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
             }`}
             style={{ maxHeight: height * 0.7 }}
           >
             <View className="p-4">
-              <View className="items-center mb-6">
-                <View className="w-12 h-1 rounded-full bg-gray-300 mb-4" />
+              <View className="items-center mb-4">
                 <Text
                   className={`text-lg font-semibold ${
                     isDarkMode ? "text-white" : "text-black"
@@ -755,6 +760,11 @@ export default function MainScreen() {
                   return (
                     <TouchableOpacity
                       key={device.id}
+                      onPress={() =>
+                        isSaved
+                          ? handleRemoveDevice(device.id)
+                          : handleAddDevice(device)
+                      }
                       activeOpacity={0.7}
                       className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
                         isDarkMode ? "bg-gray-700" : "bg-gray-100"
@@ -775,19 +785,13 @@ export default function MainScreen() {
                         )}
                       </View>
                       {isSaved ? (
-                        <TouchableOpacity
-                          onPress={() => handleRemoveDevice(device.id)}
-                          className="ml-4 bg-red-500/90 w-8 h-8 rounded-full items-center justify-center"
-                        >
+                        <View className="ml-4 bg-red-500/90 w-8 h-8 rounded-full items-center justify-center">
                           <Ionicons name="remove" size={20} color="#fff" />
-                        </TouchableOpacity>
+                        </View>
                       ) : (
-                        <TouchableOpacity
-                          onPress={() => handleAddDevice(device)}
-                          className="ml-4 bg-blue-500/90 w-8 h-8 rounded-full items-center justify-center"
-                        >
+                        <View className="ml-4 bg-blue-500/90 w-8 h-8 rounded-full items-center justify-center">
                           <Ionicons name="add" size={20} color="#fff" />
-                        </TouchableOpacity>
+                        </View>
                       )}
                     </TouchableOpacity>
                   );
@@ -851,8 +855,9 @@ export default function MainScreen() {
         </Text>
         <TouchableOpacity onPress={() => setIsFilteringDevices(true)}>
           <Ionicons
+            className="mr-0.5"
             name="filter"
-            size={24}
+            size={22}
             color={isDarkMode ? "#fff" : "#000"}
           />
         </TouchableOpacity>
@@ -880,16 +885,17 @@ export default function MainScreen() {
         activeOpacity={1}
         onPress={() => setIsFilteringDevices(false)}
       >
-        <View className="flex-1 bg-black/50 justify-end">
+        <View className="flex-1 justify-end">
           <View
-            className={`mx-4 mb-4 rounded-2xl ${
-              isDarkMode ? "bg-gray-800" : "bg-white"
+            className={`mx-4 mb-6 rounded-2xl border ${
+              isDarkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-white border-gray-200"
             }`}
             style={{ maxHeight: height * 0.7 }}
           >
             <View className="p-4">
-              <View className="items-center mb-6">
-                <View className="w-12 h-1 rounded-full bg-gray-300 mb-4" />
+              <View className="items-center mb-4">
                 <Text
                   className={`text-lg font-semibold ${
                     isDarkMode ? "text-white" : "text-black"
@@ -909,6 +915,7 @@ export default function MainScreen() {
                     <TouchableOpacity
                       key={device.id}
                       activeOpacity={0.7}
+                      onPress={() => handleToggleFilter(device.id)}
                       className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
                         isDarkMode ? "bg-gray-700" : "bg-gray-100"
                       } ${device.isFiltered ? "opacity-50" : ""}`}
@@ -927,8 +934,7 @@ export default function MainScreen() {
                           </Text>
                         )}
                       </View>
-                      <TouchableOpacity
-                        onPress={() => handleToggleFilter(device.id)}
+                      <View
                         className={`ml-4 w-8 h-8 rounded-full items-center justify-center ${
                           device.isFiltered ? "bg-red-500/90" : "bg-blue-500/90"
                         }`}
@@ -938,7 +944,7 @@ export default function MainScreen() {
                           size={20}
                           color="#fff"
                         />
-                      </TouchableOpacity>
+                      </View>
                     </TouchableOpacity>
                   ))}
               </ScrollView>
@@ -988,7 +994,7 @@ export default function MainScreen() {
       />
 
       {/* New Search Button */}
-      <View className="items-center">
+      {/* <View className="items-center">
         <View className="absolute bottom-10 w-[90%] overflow-hidden rounded-full">
           <LinearGradient
             colors={
@@ -1014,6 +1020,15 @@ export default function MainScreen() {
             </View>
           </LinearGradient>
         </View>
+      </View> */}
+
+      <View className="absolute bottom-10 w-full items-center">
+        <TouchableOpacity
+          onPress={handleStartSearch}
+          className="bg-blue-500 w-[90%] py-4 rounded-full items-center"
+        >
+          <Text className="text-white text-lg font-semibold">New Search</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Reset Button */}
