@@ -139,7 +139,7 @@ export default function HeatmapScreen() {
   return (
     <View
       className={`flex-1 items-center justify-center ${
-        isDarkMode ? "bg-black" : "bg-white"
+        isDarkMode ? "bg-black" : "bg-gray-200"
       }`}
     >
       <TouchableOpacity

@@ -17,10 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { BleManager } from "react-native-ble-plx";
 import Animated, {
-  FadeIn,
-  withSpring,
   withRepeat,
-  withSequence,
   withTiming,
   useAnimatedStyle,
   useSharedValue,
@@ -163,16 +160,24 @@ const PulsingRings = React.memo(() => {
   );
 });
 
-const ModalContent = React.memo(() => (
-  <View className="flex-1 items-center justify-center">
-    <View className="absolute w-full h-full items-center justify-center">
-      <PulsingRings />
+const ModalContent = React.memo(() => {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <View className="flex-1 items-center justify-center">
+      <View className="absolute w-full h-full items-center justify-center">
+        <PulsingRings />
+      </View>
+      <Text
+        className={`absolute bottom-4 text-lg font-semibold ${
+          isDarkMode ? "text-white" : "text-black"
+        }`}
+      >
+        Searching...
+      </Text>
     </View>
-    <Text className="absolute bottom-4 text-lg font-semibold text-white">
-      Searching...
-    </Text>
-  </View>
-));
+  );
+});
 
 const SearchModal = React.memo(
   ({
@@ -198,7 +203,7 @@ const SearchModal = React.memo(
             className={`mx-4 mb-6 rounded-2xl border ${
               isDarkMode
                 ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
+                : "bg-gray-300 border-gray-400"
             }`}
             style={{ height: height * 0.4 }}
           >
@@ -630,10 +635,20 @@ export default function MainScreen() {
         >
           {device.name}
         </Text>
-        <Text className="text-gray-400 text-sm">Signal: {device.rssi} dBm</Text>
+        <Text
+          className={`text-sm ${
+            isDarkMode ? "text-gray-400" : "text-gray-700"
+          }`}
+        >
+          Signal: {device.rssi} dBm
+        </Text>
         {device.distance && (
           <View className="flex-row items-center space-x-2">
-            <Text className={`text-sm ${getDistanceColor(device)}`}>
+            <Text
+              className={`text-sm ${
+                isDarkMode ? "text-gray-400" : "text-gray-700"
+              } ${getDistanceColor(device)}`}
+            >
               Distance: {formatDistance(device.distance)}{" "}
               {getDistanceIndicator(device)}
             </Text>
@@ -651,7 +666,11 @@ export default function MainScreen() {
           color={isDarkMode ? "#9CA3AF" : "#4B5563"}
         />
         {device.distance && device.distance < 2 && (
-          <Text className="absolute top-6 w-full text-xs text-green-500 mt-1">
+          <Text
+            className={`absolute top-6 w-full text-xs ${
+              isDarkMode ? "text-green-500" : "text-green-900"
+            } mt-1`}
+          >
             Nearby
           </Text>
         )}
@@ -737,7 +756,7 @@ export default function MainScreen() {
             className={`mx-4 mb-6 rounded-2xl border ${
               isDarkMode
                 ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
+                : "bg-gray-300 border-gray-400"
             }`}
             style={{ maxHeight: height * 0.7 }}
           >
@@ -767,7 +786,7 @@ export default function MainScreen() {
                       }
                       activeOpacity={0.7}
                       className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
-                        isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                        isDarkMode ? "bg-gray-700" : "bg-gray-200"
                       } ${isSaved ? "opacity-80" : ""}`}
                     >
                       <View className="flex-1">
@@ -779,7 +798,11 @@ export default function MainScreen() {
                           {device.name}
                         </Text>
                         {device.roundedDistance && (
-                          <Text className="text-gray-400">
+                          <Text
+                            className={`${
+                              isDarkMode ? "text-gray-400" : "text-gray-700"
+                            }`}
+                          >
                             Distance: {formatDistance(device.roundedDistance)}
                           </Text>
                         )}
@@ -890,7 +913,7 @@ export default function MainScreen() {
             className={`mx-4 mb-6 rounded-2xl border ${
               isDarkMode
                 ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
+                : "bg-gray-300 border-gray-400"
             }`}
             style={{ maxHeight: height * 0.7 }}
           >
@@ -917,7 +940,7 @@ export default function MainScreen() {
                       activeOpacity={0.7}
                       onPress={() => handleToggleFilter(device.id)}
                       className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
-                        isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                        isDarkMode ? "bg-gray-700" : "bg-gray-200"
                       } ${device.isFiltered ? "opacity-50" : ""}`}
                     >
                       <View className="flex-1">
@@ -929,7 +952,11 @@ export default function MainScreen() {
                           {device.name}
                         </Text>
                         {device.roundedDistance && (
-                          <Text className="text-gray-400">
+                          <Text
+                            className={`${
+                              isDarkMode ? "text-gray-400" : "text-gray-700"
+                            }`}
+                          >
                             Distance: {formatDistance(device.roundedDistance)}
                           </Text>
                         )}
@@ -956,7 +983,9 @@ export default function MainScreen() {
   );
 
   return (
-    <View className={`flex-1 pt-12 ${isDarkMode ? "bg-black" : "bg-white"}`}>
+    <View
+      className={`flex-1 pt-12 ${isDarkMode ? "bg-black" : "bg-gray-200/90"}`}
+    >
       {/* Settings */}
       <TouchableOpacity
         onPress={() => router.push("/settings")}
@@ -972,13 +1001,15 @@ export default function MainScreen() {
 
       <View className="px-4 my-14">
         <Text
-          className={`text-2xl font-bold mb-2 ${
+          className={`text-2xl font-bold mb-1 ${
             isDarkMode ? "text-white" : "text-black"
           }`}
         >
-          Device Finder
+          AccuFind
         </Text>
-        <Text className="text-gray-400">Discover and track nearby devices</Text>
+        <Text className={`${isDarkMode ? "text-gray-400" : "text-gray-800"}`}>
+          Discover and track nearby devices
+        </Text>
       </View>
 
       <ScrollView className="flex-1 mb-24">

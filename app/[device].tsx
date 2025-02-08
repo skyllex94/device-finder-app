@@ -72,7 +72,7 @@ function SettingsModal({
             className={`mx-4 mb-6 rounded-2xl border ${
               isDarkMode
                 ? "bg-gray-800 border-gray-700"
-                : "bg-white border-gray-200"
+                : "bg-gray-300 border-gray-400"
             }`}
           >
             <View className="p-3">
@@ -88,7 +88,7 @@ function SettingsModal({
                 <TouchableOpacity
                   onPress={() => handleNavigation(`/map?id=${activeDevice.id}`)}
                   className={`p-3.5 rounded-lg mb-1.5 flex-row items-center justify-between ${
-                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                    isDarkMode ? "bg-gray-700" : "bg-gray-200"
                   }`}
                 >
                   <View className="flex-row items-center">
@@ -116,7 +116,7 @@ function SettingsModal({
                     handleNavigation(`/heatmap?id=${activeDevice.id}`)
                   }
                   className={`p-3.5 rounded-lg mb-1.5 flex-row items-center justify-between ${
-                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                    isDarkMode ? "bg-gray-700" : "bg-gray-200"
                   }`}
                 >
                   <View className="flex-row items-center">
@@ -337,7 +337,7 @@ export default function DeviceTracker() {
   const checkStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: checkScale.value },
-      { translateY: 1 * checkScale.value }, // Center vertically
+      { translateY: 1 * checkScale.value },
     ],
     opacity: checkScale.value,
   }));
@@ -376,7 +376,7 @@ export default function DeviceTracker() {
 
   return (
     <View
-      className={`flex-1 ${isDarkMode ? "bg-black" : "bg-white"}`}
+      className={`flex-1 ${isDarkMode ? "bg-black" : "bg-gray-200"}`}
       style={{ paddingTop: 60 }}
     >
       {/* Header with Map Button */}
@@ -427,7 +427,7 @@ export default function DeviceTracker() {
                 height: centerCircleSize,
                 top: (outerRingSize - centerCircleSize) / 2,
                 left: (outerRingSize - centerCircleSize) / 2,
-                zIndex: 1, // Lowest z-index
+                zIndex: 1,
               },
               circleStyle,
             ]}
@@ -457,7 +457,7 @@ export default function DeviceTracker() {
           {/* Outer Ring */}
           <View
             className={`absolute w-full h-full rounded-full border-8 ${
-              isDarkMode ? "border-gray-800/50" : "border-gray-200/50"
+              isDarkMode ? "border-gray-800/50" : "border-gray-400/50"
             }`}
             style={{ zIndex: 3 }} // Above ripples
           />
@@ -475,7 +475,7 @@ export default function DeviceTracker() {
           >
             <View
               className={`absolute w-full h-full rounded-full border-8 ${
-                isDarkMode ? "border-gray-800" : "border-gray-200"
+                isDarkMode ? "border-gray-800" : "border-gray-500/80"
               }`}
             />
           </View>

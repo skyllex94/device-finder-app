@@ -20,7 +20,11 @@ export default function PersonalizeSettings() {
             isDarkMode ? "bg-gray-800" : "bg-gray-100"
           }`}
         >
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-700">
+          <View
+            className={`flex-row items-center justify-between px-4 py-3 border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
+          >
             <View className="flex-row items-center">
               <Ionicons
                 name={isDarkMode ? "moon-outline" : "sunny-outline"}
@@ -42,7 +46,11 @@ export default function PersonalizeSettings() {
             />
           </View>
 
-          <View className="flex-row items-center justify-between p-4 border-b border-gray-700">
+          <View
+            className={`flex-row items-center justify-between p-4 border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
+          >
             <View className="flex-row items-center">
               <Ionicons
                 name="crop-outline"
@@ -84,8 +92,16 @@ export default function PersonalizeSettings() {
 
           <TouchableOpacity className="flex-row items-center justify-between p-4">
             <View className="flex-row items-center">
-              <Ionicons name="trash-outline" size={20} color="#EF4444" />
-              <Text className="ml-3 text-red-500">Clear All Data</Text>
+              <Ionicons
+                name="trash-outline"
+                size={20}
+                color={isDarkMode ? "#fff" : "#000"}
+              />
+              <Text
+                className={`ml-3 ${isDarkMode ? "text-white" : "text-black"}`}
+              >
+                Clear All Data
+              </Text>
             </View>
             <Ionicons
               name="chevron-forward"

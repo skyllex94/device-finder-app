@@ -1,27 +1,75 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import React from "react";
+import { View, Text, TouchableOpacity, Linking, Share } from "react-native";
+import React, { useState } from "react";
 import { useThemeStore } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import * as Sharing from "expo-sharing";
+import TipModal from "./tip";
 
 export default function GeneralSettings() {
   const { isDarkMode } = useThemeStore();
   const router = useRouter();
 
+  const [showTipModal, setShowTipModal] = useState(false);
+
+  const handlePrivacyPolicy = async () => {
+    const url =
+      "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+    await Linking.openURL(url);
+  };
+
+  const handleTerms = async () => {
+    const url = "https://sites.google.com/view/accufind/terms-conditions";
+    await Linking.openURL(url);
+  };
+
+  const handleShare = async () => {
+    try {
+      const appLink = "https://apps.apple.com/your-app-link";
+      await Share.share({
+        message: `Hey check out this free app for finding your devices, you might like it: ${appLink}`,
+        title: "Share Device Finder",
+      });
+    } catch (error) {
+      console.error("Error sharing:", error);
+    }
+  };
+
+  const handleContact = async () => {
+    const email = "zionstudiosapps@gmail.com";
+    const subject = "Device Finder App Support";
+    const body = "Hello,\n\nI have a question about the Device Finder app:\n\n";
+
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(mailtoUrl);
+      if (canOpen) {
+        await Linking.openURL(mailtoUrl);
+      }
+    } catch (error) {
+      console.error("Error opening email:", error);
+    }
+  };
+
   return (
-    <View className={`${isDarkMode ? "bg-black" : "bg-white"}`}>
+    <View className={`${isDarkMode ? "bg-black" : "bg-gray-200/90"}`}>
       <View className="px-4 pt-4">
         <Text className={`text-sm font-medium mb-2 text-gray-500`}>
           General
         </Text>
         <View
           className={`rounded-lg overflow-hidden ${
-            isDarkMode ? "bg-gray-800" : "bg-gray-100"
+            isDarkMode ? "bg-gray-800" : "bg-slate-100"
           }`}
         >
           <TouchableOpacity
             onPress={() => router.push("/privacy")}
-            className="flex-row items-center justify-between p-4 border-b border-gray-700"
+            className={`flex-row items-center justify-between p-4 border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
           >
             <View className="flex-row items-center">
               <Ionicons
@@ -43,8 +91,10 @@ export default function GeneralSettings() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push("/privacy")}
-            className="flex-row items-center justify-between p-4 border-b border-gray-700"
+            onPress={() => setShowTipModal(true)}
+            className={`flex-row items-center justify-between p-4 border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
           >
             <View className="flex-row items-center">
               <Ionicons
@@ -66,8 +116,10 @@ export default function GeneralSettings() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push("/privacy")}
-            className="flex-row items-center justify-between p-4 border-b border-gray-700"
+            onPress={handlePrivacyPolicy}
+            className={`flex-row items-center justify-between p-4 border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
           >
             <View className="flex-row items-center">
               <Ionicons
@@ -89,8 +141,10 @@ export default function GeneralSettings() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push("/terms")}
-            className="flex-row items-center justify-between p-4 border-b border-gray-700"
+            onPress={handleTerms}
+            className={`flex-row items-center justify-between p-4 border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
           >
             <View className="flex-row items-center">
               <Ionicons
@@ -112,10 +166,10 @@ export default function GeneralSettings() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => {
-              /* Add share functionality */
-            }}
-            className="flex-row items-center justify-between p-4 border-b border-gray-700"
+            onPress={handleShare}
+            className={`flex-row items-center justify-between p-4 border-b ${
+              isDarkMode ? "border-gray-700" : "border-gray-300"
+            }`}
           >
             <View className="flex-row items-center">
               <Ionicons
@@ -132,7 +186,7 @@ export default function GeneralSettings() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.push("/contact")}
+            onPress={handleContact}
             className="flex-row items-center justify-between p-4"
           >
             <View className="flex-row items-center">
@@ -155,6 +209,12 @@ export default function GeneralSettings() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <TipModal
+        isVisible={showTipModal}
+        onClose={() => setShowTipModal(false)}
+        isDarkMode={isDarkMode}
+      />
     </View>
   );
 }

@@ -69,7 +69,7 @@ const OurApps: React.FC = () => {
             <View key={app.name} className="flex-row items-center">
               <TouchableOpacity
                 onPress={() => openURL(app.url)}
-                className="justify-center items-start my-4"
+                className="justify-center items-start"
               >
                 <View className="items-center">
                   <Image
@@ -95,7 +95,7 @@ const OurApps: React.FC = () => {
 
               {index < appData.length - 1 && (
                 <View
-                  className={`h-16 w-[0.5px] bg-gray-700 mx-3 ${
+                  className={`h-16 w-[0.5px] mx-3 ${
                     isDarkMode ? "bg-gray-700" : "bg-gray-300"
                   } `}
                 />
