@@ -228,14 +228,13 @@ export function VibrationModal({
             }`}
           >
             <View className="p-4">
-              <View className="items-center mb-6">
-                <View className="w-12 h-1 rounded-full bg-gray-300 mb-4" />
+              <View className="items-start mb-2">
                 <Text
-                  className={`text-lg font-semibold ${
-                    isDarkMode ? "text-white" : "text-black"
+                  className={`text-sm font-medium mb-1.5 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
-                  Alert Distance
+                  Receive proximity vibration
                 </Text>
               </View>
 
@@ -245,7 +244,7 @@ export function VibrationModal({
                   onPress={() =>
                     handleDistanceSelect(key as keyof typeof DISTANCE_PRESETS)
                   }
-                  className={`p-4 rounded-lg mb-2 flex-row items-center justify-between ${
+                  className={`px-4 py-3 rounded-lg mb-2 flex-row items-center justify-between ${
                     isDarkMode ? "bg-gray-700" : "bg-gray-100"
                   } ${
                     selectedDistance === key ? "border-2 border-blue-500" : ""
@@ -302,7 +301,7 @@ export function SettingsVibrationOption({
     const newState = await VibrationManager.toggleVibration();
     setIsEnabled(newState);
     if (newState) {
-      onPress(); // Open distance settings when enabling
+      onPress();
     }
   };
 
