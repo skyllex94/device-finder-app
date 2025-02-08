@@ -13,7 +13,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useThemeStore } from "../components/Themed";
 import { LinearGradient } from "expo-linear-gradient";
-import * as ExpoDevice from "expo-device";
+
 import * as Location from "expo-location";
 import { BleManager } from "react-native-ble-plx";
 import Animated, {
