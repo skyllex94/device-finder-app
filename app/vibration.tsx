@@ -299,6 +299,9 @@ export function SettingsVibrationOption({
     VibrationManager.isVibrationEnabled().then(setIsEnabled);
   }, []);
 
+  const { isProMember } = useRevenueCat();
+  const router = useRouter();
+
   const toggleVibration = async () => {
     const newState = await VibrationManager.toggleVibration();
     setIsEnabled(newState);

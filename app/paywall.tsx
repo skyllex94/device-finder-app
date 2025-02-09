@@ -7,8 +7,9 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Switch,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useRouter } from "expo-router";
@@ -22,19 +23,41 @@ export default function Paywall() {
 
   const { currentOffering } = useRevenueCat();
   const [purchaseSpinner, setPurchaseSpinner] = useState(false);
+  const [isFreeTrial, setIsFreeTrial] = useState(false);
+
+  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "yearly">(
+    "yearly"
+  );
+
+  const weeklyPrice = currentOffering?.weekly?.product?.price || 0;
+  const yearlyPrice = currentOffering?.annual?.product?.price || 0;
+  const weeklyPriceFromYearly = (yearlyPrice / 52).toFixed(2);
 
   async function buySubscription(subscription: string) {
     setPurchaseSpinner(true);
 
-    if (!currentOffering?.[subscription]) {
+    let packageToBuy;
+
+    // Handle subscription types
+    if (subscription === "weekly") {
+      // Use the no trial package from availablePackages when free trial is off
+      packageToBuy = isFreeTrial
+        ? currentOffering?.weekly
+        : (currentOffering?.availablePackages as unknown as any[])?.find(
+            (pkg) => pkg.identifier === "accufind_weekly_no_trial"
+          );
+    } else {
+      // For yearly subscription
+      packageToBuy = currentOffering?.annual;
+    }
+
+    if (!packageToBuy) {
       setPurchaseSpinner(false);
       return;
     }
 
     try {
-      const purchaserInfo = await Purchases.purchasePackage(
-        currentOffering?.[subscription]
-      );
+      const purchaserInfo = await Purchases.purchasePackage(packageToBuy);
 
       // Check if purchase completed
       if (
@@ -53,6 +76,7 @@ export default function Paywall() {
   async function restorePurchase() {
     setPurchaseSpinner(true);
     const purchaserInfo = await Purchases.restorePurchases();
+    console.log("purchaserInfo:", purchaserInfo);
 
     if (purchaserInfo?.activeSubscriptions.length > 0) {
       Alert.alert("Success", "Your purchase has been restored");
@@ -63,17 +87,14 @@ export default function Paywall() {
   }
 
   const calculateSavings = () => {
-    if (
-      !currentOffering?.monthly?.product?.price ||
-      !currentOffering?.annual?.product?.price
-    ) {
+    if (!weeklyPrice || !yearlyPrice) {
       return 0;
     }
 
-    const monthlyAnnualCost = currentOffering.monthly.product.price * 12;
-    const annualCost = currentOffering.annual.product.price;
+    const weeklyAnnualCost = weeklyPrice * 52;
+    const annualCost = yearlyPrice;
     const savingsPercentage =
-      ((monthlyAnnualCost - annualCost) / monthlyAnnualCost) * 100;
+      ((weeklyAnnualCost - annualCost) / weeklyAnnualCost) * 100;
 
     return Math.round(savingsPercentage);
   };
@@ -86,23 +107,17 @@ export default function Paywall() {
         </SafeAreaView>
       ) : (
         <SafeAreaView className="flex-1 bg-[#021d32]">
-          {/* Close Button */}
-          {/* <TouchableOpacity
-            onPress={handleClose}
-            className="absolute right-4 top-8 z-10"
-          >
-            <Ionicons name="close-circle" size={32} color="#28384f" />
-          </TouchableOpacity> */}
-
           <Spinner visible={purchaseSpinner} />
 
           {/* Image Container with Gradient */}
-          <View className="h-[45%] w-full pt-10 absolute top-0">
-            <Image
-              source={require("../assets/images/paywall_devices.jpg")}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
+          <View className="h-[45%] w-full absolute top-0">
+            <View className="h-full w-full overflow-hidden">
+              <Image
+                source={require("../assets/images/new_paywall_image.jpg")}
+                className="w-full h-full"
+                resizeMode="cover"
+              />
+            </View>
             <LinearGradient
               colors={["transparent", "#021d32"]}
               style={{
@@ -110,7 +125,7 @@ export default function Paywall() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: "30%",
+                height: "100%",
               }}
             />
             <LinearGradient
@@ -120,7 +135,7 @@ export default function Paywall() {
                 left: 0,
                 right: 0,
                 top: 0,
-                height: "50%",
+                height: "100%",
               }}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
@@ -129,143 +144,286 @@ export default function Paywall() {
 
           <View className="flex-1 px-6">
             {/* Header */}
-            <View className="mt-8">
-              <Text className="text-white text-center font-bold text-[28px] mb-2">
-                Enjoy the Full Benefits
-              </Text>
-              <Text className="text-gray-300 text-center text-[16px]">
-                Get Access to Your Better You!
-              </Text>
-            </View>
+
+            <Text className="text-white text-center font-bold text-[28px] mb-10 mt-8">
+              Review our Benefits
+            </Text>
+
+            {/* Close Button */}
+            <TouchableOpacity
+              className="absolute right-4 top-8 z-50"
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+              style={{ opacity: 0.2 }}
+            >
+              <Ionicons name="close-circle" size={34} color="#1E90FF" />
+            </TouchableOpacity>
 
             {/* Content Container - pushes content to bottom */}
-            <View className="flex-1 justify-end mb-6">
+            <View className="justify-end mb-6">
               {/* Benefits */}
-              <View className="space-y-12 mb-10 gap-y-4">
-                {/* Benefit 1 */}
+              <View className="space-y-12 mb-6 gap-y-3">
+                {/* Signal Heatmap */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
-                    <Ionicons name="layers-outline" size={28} color="#FFD700" />
+                    <Ionicons name="radio-outline" size={28} color="#FFD700" />
                   </View>
                   <View className="w-[80%]">
                     <Text className="text-white font-semibold text-[16px] mb-1">
-                      Full Access to all Sounds
+                      Signal Heatmap
                     </Text>
                     <Text className="text-gray-300 text-[14px]">
-                      Unlock our complete library of carefully crafted sounds
-                      for every mood and moment
+                      Visualize signal strength patterns to optimize device
+                      tracking
                     </Text>
                   </View>
                 </View>
 
-                {/* Benefit 2 */}
+                {/* Map View */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
-                    <Ionicons
-                      name="infinite-outline"
+                    <Ionicons name="map-outline" size={28} color="#FFD700" />
+                  </View>
+                  <View className="w-[80%]">
+                    <Text className="text-white font-semibold text-[16px] mb-1">
+                      Map View
+                    </Text>
+                    <Text className="text-gray-300 text-[14px]">
+                      Track device locations with precise mapping integration
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Unlimited Radar Proximity Tracker */}
+                <View className="flex-row">
+                  <View className="w-[20%] items-center pt-1">
+                    <Ionicons name="bluetooth" size={28} color="#FFD700" />
+                  </View>
+                  <View className="w-[80%]">
+                    <Text className="text-white font-semibold text-[16px] mb-1">
+                      Unlimited Accurate Tracker
+                    </Text>
+                    <Text className="text-gray-300 text-[14px]">
+                      Get the main feature of the app with unlimited destination
+                      tracking.
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Proximity Vibrations */}
+                <View className="flex-row">
+                  <View className="w-[20%] items-center pt-1">
+                    <MaterialCommunityIcons
+                      name="vibrate"
                       size={28}
                       color="#FFD700"
                     />
                   </View>
                   <View className="w-[80%]">
                     <Text className="text-white font-semibold text-[16px] mb-1">
-                      More Noises to Come
+                      Proximity Vibrations
                     </Text>
                     <Text className="text-gray-300 text-[14px]">
-                      Be the first to experience new sounds as we continuously
-                      expand our collection
+                      Get haptic feedback as you get closer to your device
                     </Text>
                   </View>
                 </View>
 
-                {/* Benefit 3 */}
+                {/* Notifications */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
                     <Ionicons
-                      name="sparkles-outline"
+                      name="notifications-outline"
                       size={28}
                       color="#FFD700"
                     />
                   </View>
                   <View className="w-[80%]">
                     <Text className="text-white font-semibold text-[16px] mb-1">
-                      Continuous Sound Refinement
+                      Smart Notifications
                     </Text>
                     <Text className="text-gray-300 text-[14px]">
-                      Experience enhanced audio quality with our regularly
-                      updated and optimized sounds
+                      Receive alerts when devices enter or leave your range
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Continuous Accuracy Refinement */}
+                <View className="flex-row">
+                  <View className="w-[20%] items-center pt-1">
+                    <Ionicons name="location-sharp" size={28} color="#FFD700" />
+                  </View>
+                  <View className="w-[80%]">
+                    <Text className="text-white font-semibold text-[16px] mb-1">
+                      Accuracy Refinement
+                    </Text>
+                    <Text className="text-gray-300 text-[14px]">
+                      Continuosly improving the accuracy with predictive
+                      geolocation.
                     </Text>
                   </View>
                 </View>
               </View>
 
-              {/* Subscription Options */}
-              <View className="gap-y-3">
-                {/* Monthly Option */}
-                <TouchableOpacity
-                  className="bg-[#0A3A5A] p-4 rounded-3xl border border-[#1E90FF]"
-                  activeOpacity={0.7}
-                  onPress={() => buySubscription("monthly")}
-                >
-                  <Text className="text-white text-center font-semibold text-[16px]">
-                    Monthly Plan
+              {/* Free Trial Toggle */}
+              <View
+                className={`px-5 py-3 rounded-3xl border bg-[#062844] border-gray-600 mb-2`}
+              >
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-white text-[14px]">
+                    Enable Free Trial
                   </Text>
-                  <Text className="text-gray-300 text-center text-[12px] mt-1">
-                    3-day Free Trial, then{" "}
-                    {currentOffering?.monthly?.product?.priceString}/month
-                  </Text>
-                </TouchableOpacity>
+                  <Switch
+                    value={isFreeTrial}
+                    onValueChange={(value) => {
+                      setIsFreeTrial(value);
+                      if (value) setSelectedPlan("weekly");
+                    }}
+                    trackColor={{ false: "#767577", true: "#81b0ff" }}
+                    thumbColor={isFreeTrial ? "#2563eb" : "#f4f3f4"}
+                  />
+                </View>
+              </View>
 
+              {/* Subscription Options */}
+              <View>
                 {/* Yearly Option */}
                 <TouchableOpacity
-                  className="bg-[#0A3A5A] p-4 rounded-3xl border border-[#FFD700]"
+                  className={`p-5 mb-2 rounded-3xl border ${
+                    selectedPlan === "yearly"
+                      ? "bg-[#0A3A5A] border-[#FFD700]"
+                      : "bg-[#062844] border-gray-600"
+                  }`}
                   activeOpacity={0.7}
-                  onPress={() => buySubscription("annual")}
+                  onPress={() => {
+                    setSelectedPlan("yearly");
+                    setIsFreeTrial(false);
+                  }}
                 >
                   <View className="absolute -top-2 right-4 bg-[#FFD700] px-2 py-1 rounded-full">
                     <Text className="text-[#021d32] text-[10px] font-bold">
                       SAVE {calculateSavings()}%
                     </Text>
                   </View>
-                  <Text className="text-white text-center font-semibold text-[16px]">
-                    Yearly Plan
-                  </Text>
-                  <Text className="text-gray-300 text-center text-[12px] mt-1">
-                    3-day Free Trial, then{" "}
-                    {currentOffering?.annual?.product?.priceString}/year
-                  </Text>
+                  <View className="flex-row justify-between items-center">
+                    <View>
+                      <Text className="text-white font-semibold text-[16px]">
+                        Yearly Access
+                      </Text>
+                      <Text className="text-gray-300 text-[10px] mt-1">
+                        Only ${yearlyPrice} per year
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center justify-center">
+                      <View>
+                        <Text className="text-white text-right text-[16px]">
+                          ${weeklyPriceFromYearly}
+                        </Text>
+                        <Text className="text-gray-300 text-[12px]">
+                          per week
+                        </Text>
+                      </View>
+                      <View className="ml-3">
+                        <View className="h-6 w-6 border-2 border-gray-600 rounded-full items-center justify-center">
+                          {selectedPlan === "yearly" && (
+                            <View className="h-4 w-4 rounded-full bg-[#FFD700]" />
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </View>
                 </TouchableOpacity>
-              </View>
 
-              {/* Footer Links with dividers */}
-              <View className="flex-row justify-center items-center mt-6">
+                {/* Weekly Option */}
                 <TouchableOpacity
+                  className={`p-5 rounded-3xl border ${
+                    selectedPlan === "weekly"
+                      ? "bg-[#0A3A5A] border-[#1E90FF]"
+                      : "bg-[#062844] border-gray-600"
+                  }`}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSelectedPlan("weekly");
+                  }}
+                >
+                  <View className="flex-row justify-between items-center">
+                    <View>
+                      <Text className="text-white font-semibold text-[16px]">
+                        Weekly Access
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center justify-center">
+                      <View>
+                        <Text className="text-white text-right text-[16px]">
+                          ${weeklyPrice}
+                        </Text>
+                        <Text className="text-gray-300 text-[12px]">
+                          per week
+                        </Text>
+                      </View>
+                      <View className="ml-3">
+                        <View className="h-6 w-6 border-2 border-gray-600 rounded-full items-center justify-center">
+                          {selectedPlan === "weekly" && (
+                            <View className="h-4 w-4 rounded-full bg-[#1E90FF]" />
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Continue Button */}
+                <TouchableOpacity
+                  className="bg-[#1E90FF] p-4 rounded-3xl mt-2"
                   activeOpacity={0.7}
                   onPress={() =>
-                    Linking.openURL(
-                      "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+                    buySubscription(
+                      selectedPlan === "weekly" ? "weekly" : "annual"
                     )
                   }
                 >
-                  <Text className="text-gray-400 text-[12px]">
-                    Privacy Policy
+                  <Text className="text-white text-center font-semibold text-[16px]">
+                    Continue
                   </Text>
                 </TouchableOpacity>
-                <Text className="text-gray-400 text-[12px] mx-3">|</Text>
-                <TouchableOpacity activeOpacity={0.7} onPress={restorePurchase}>
-                  <Text className="text-gray-400 text-[12px]">
-                    Restore Purchase
-                  </Text>
-                </TouchableOpacity>
-                <Text className="text-gray-400 text-[12px] mx-3">|</Text>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => router.push("/terms")}
-                >
-                  <Text className="text-gray-400 text-[12px]">
-                    Terms of Service
-                  </Text>
-                </TouchableOpacity>
+
+                {/* Footer Links with dividers */}
+                <View className="flex-row justify-center items-center mt-2">
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() =>
+                      Linking.openURL(
+                        "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+                      )
+                    }
+                  >
+                    <Text className="text-gray-400 text-[12px]">
+                      Privacy Policy
+                    </Text>
+                  </TouchableOpacity>
+                  <Text className="text-gray-400 text-[12px] mx-3">|</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={restorePurchase}
+                  >
+                    <Text className="text-gray-400 text-[12px]">
+                      Restore Purchase
+                    </Text>
+                  </TouchableOpacity>
+                  <Text className="text-gray-400 text-[12px] mx-3">|</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() =>
+                      Linking.openURL(
+                        "https://sites.google.com/view/accufind/terms-conditions"
+                      )
+                    }
+                  >
+                    <Text className="text-gray-400 text-[12px]">
+                      Terms of Use
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
