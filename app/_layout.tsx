@@ -8,6 +8,7 @@ import SplashScreen from "./splash";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import Purchases from "react-native-purchases";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -46,6 +47,10 @@ export default function RootLayout() {
     prepare();
   }, []);
 
+  Purchases.configure({
+    apiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? "",
+  });
+
   if (!isReady) {
     return <SplashScreen />;
   }
@@ -66,7 +71,9 @@ export default function RootLayout() {
             name="direction_finder"
             options={{ presentation: "modal" }}
           />
+
           <Stack.Screen name="heatmap" options={{ presentation: "modal" }} />
+          <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
 
           <Stack.Screen
             name="onboarding"

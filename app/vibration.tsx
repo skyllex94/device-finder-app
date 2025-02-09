@@ -14,6 +14,8 @@ import { useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
+import useRevenueCat from "@/hooks/useRevenueCat";
+import { useRouter } from "expo-router";
 
 const VIBRATION_PATTERN = [500, 200, 500]; // vibrate, pause, vibrate (in ms)
 const STORAGE_KEY = "vibration_enabled";

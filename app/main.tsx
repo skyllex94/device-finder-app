@@ -25,6 +25,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useDeviceStore } from "../store/deviceStore";
 import { useSettingsStore } from "../store/settingsStore";
+import useRevenueCat from "@/hooks/useRevenueCat";
 
 interface Device {
   id: string;

@@ -6,7 +6,7 @@ import {
   Platform,
   Modal,
 } from "react-native";
-import { useRouter, useLocalSearchParams, Link } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeStore } from "../components/Themed";
 import Animated, {
@@ -23,8 +23,6 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { useDeviceStore } from "../store/deviceStore";
-import { interpolate, Extrapolate } from "react-native-reanimated";
-import { formatDistance } from "@/utils/distanceUnits";
 import { useSettingsStore } from "../store/settingsStore";
 import {
   useProximityVibration,
@@ -36,6 +34,7 @@ import {
   NotificationOption,
   useProximityNotifications,
 } from "./alerts/notifications";
+import useRevenueCat from "@/hooks/useRevenueCat";
 
 function SettingsModal({
   isVisible,
@@ -51,8 +50,17 @@ function SettingsModal({
   activeDevice: any;
 }) {
   const router = useRouter();
+  const { isProMember } = useRevenueCat();
 
   const handleNavigation = (path: `/${string}`) => {
+    if (!isProMember) {
+      onClose();
+      setTimeout(() => {
+        router.push("/paywall");
+      }, 100);
+      return;
+    }
+
     onClose();
     setTimeout(() => {
       router.push(path);
@@ -105,11 +113,21 @@ function SettingsModal({
                       Map View
                     </Text>
                   </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={isDarkMode ? "white" : "black"}
-                  />
+                  <View className="flex-row items-center">
+                    {!isProMember && (
+                      <Ionicons
+                        name="lock-closed"
+                        size={16}
+                        color={isDarkMode ? "#9CA3AF" : "#4B5563"}
+                        style={{ marginRight: 8 }}
+                      />
+                    )}
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={isDarkMode ? "white" : "black"}
+                    />
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() =>
@@ -133,11 +151,21 @@ function SettingsModal({
                       Signal Heatmap
                     </Text>
                   </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={isDarkMode ? "white" : "black"}
-                  />
+                  <View className="flex-row items-center">
+                    {!isProMember && (
+                      <Ionicons
+                        name="lock-closed"
+                        size={16}
+                        color={isDarkMode ? "#9CA3AF" : "#4B5563"}
+                        style={{ marginRight: 8 }}
+                      />
+                    )}
+                    <Ionicons
+                      name="chevron-forward"
+                      size={20}
+                      color={isDarkMode ? "white" : "black"}
+                    />
+                  </View>
                 </TouchableOpacity>
               </View>
 
@@ -179,6 +207,8 @@ export default function DeviceTracker() {
   const [isVibrationEnabled, setIsVibrationEnabled] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVibrationModal, setShowVibrationModal] = useState(false);
+
+  const { isProMember } = useRevenueCat();
 
   useEffect(() => {
     if (deviceId) {
