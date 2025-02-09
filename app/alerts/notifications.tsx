@@ -8,7 +8,9 @@ import { Platform, Switch, Text, TouchableOpacity, View } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import * as TaskManager from "expo-task-manager";
-import { formatDistance } from "../vibration"; // Import the shared function
+import { formatDistance, VibrationManager } from "./vibration"; // Import the shared function
+import { useRouter } from "expo-router";
+import useRevenueCat from "@/hooks/useRevenueCat";
 
 const NOTIFICATION_STORAGE_KEY = "notifications_enabled";
 const NOTIFICATION_DISTANCE = 1; // 1 meter trigger distance
@@ -189,21 +191,37 @@ export function useProximityNotifications(deviceId: string | null) {
   // }, [deviceId, devices, distanceUnit]);
 }
 
-export function NotificationOption({ isDarkMode }: { isDarkMode: boolean }) {
+export function NotificationOption({
+  isDarkMode,
+  onClose,
+}: {
+  isDarkMode: boolean;
+  onClose: () => void;
+}) {
   const [isEnabled, setIsEnabled] = useState(false);
+  const { isProMember } = useRevenueCat();
+  const router = useRouter();
 
   useEffect(() => {
     NotificationManager.isNotificationsEnabled().then(setIsEnabled);
   }, []);
 
-  const toggleNotifications = async () => {
+  const handleNotificationPress = async () => {
+    if (!isProMember) {
+      onClose();
+      setTimeout(() => {
+        router.push("/paywall");
+      }, 100);
+      return;
+    }
+
     const newState = await NotificationManager.toggleNotifications();
     setIsEnabled(newState);
   };
 
   return (
     <TouchableOpacity
-      onPress={toggleNotifications}
+      onPress={handleNotificationPress}
       className={`py-2 pl-5 pr-3 rounded-lg mb-2 flex-row items-center justify-between ${
         isDarkMode ? "bg-gray-700" : "bg-gray-200"
       }`}
@@ -224,7 +242,7 @@ export function NotificationOption({ isDarkMode }: { isDarkMode: boolean }) {
         style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
         trackColor={{ false: "#767577", true: "#81b0ff" }}
         thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
-        onValueChange={toggleNotifications}
+        onValueChange={handleNotificationPress}
         value={isEnabled}
       />
     </TouchableOpacity>

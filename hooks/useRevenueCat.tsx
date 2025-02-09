@@ -21,6 +21,7 @@ const iapIdentifiers = {
 // Subscription identifiers for reference
 const subIdentifiers = {
   weekly: "accufind_weekly",
+  weekly_no_trial: "accufind_weekly_no_trial",
   yearly: "accufind_yearly",
 };
 

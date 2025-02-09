@@ -28,8 +28,8 @@ import {
   useProximityVibration,
   VibrationManager,
   VibrationModal,
-} from "./vibration";
-import { SettingsVibrationOption } from "./vibration";
+} from "./alerts/vibration";
+import { SettingsVibrationOption } from "./alerts/vibration";
 import {
   NotificationOption,
   useProximityNotifications,
@@ -181,8 +181,9 @@ function SettingsModal({
                 <SettingsVibrationOption
                   isDarkMode={isDarkMode}
                   onPress={onVibrationPress}
+                  onClose={onClose}
                 />
-                <NotificationOption isDarkMode={isDarkMode} />
+                <NotificationOption isDarkMode={isDarkMode} onClose={onClose} />
               </View>
             </View>
           </View>
@@ -207,8 +208,6 @@ export default function DeviceTracker() {
   const [isVibrationEnabled, setIsVibrationEnabled] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVibrationModal, setShowVibrationModal] = useState(false);
-
-  const { isProMember } = useRevenueCat();
 
   useEffect(() => {
     if (deviceId) {

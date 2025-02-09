@@ -7,8 +7,8 @@ import {
   Text,
   Switch,
 } from "react-native";
-import { useDeviceStore } from "../store/deviceStore";
-import { useSettingsStore } from "../store/settingsStore";
+import { useDeviceStore } from "../../store/deviceStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -289,20 +289,29 @@ export function VibrationModal({
 export function SettingsVibrationOption({
   isDarkMode,
   onPress,
+  onClose,
 }: {
   isDarkMode: boolean;
   onPress: () => void;
+  onClose: () => void;
 }) {
   const [isEnabled, setIsEnabled] = useState(false);
+  const { isProMember } = useRevenueCat();
+  const router = useRouter();
 
   useEffect(() => {
     VibrationManager.isVibrationEnabled().then(setIsEnabled);
   }, []);
 
-  const { isProMember } = useRevenueCat();
-  const router = useRouter();
+  const handleVibrationPress = async () => {
+    if (!isProMember) {
+      onClose();
+      setTimeout(() => {
+        router.push("/paywall");
+      }, 100);
+      return;
+    }
 
-  const toggleVibration = async () => {
     const newState = await VibrationManager.toggleVibration();
     setIsEnabled(newState);
     if (newState) {
@@ -312,7 +321,7 @@ export function SettingsVibrationOption({
 
   return (
     <TouchableOpacity
-      onPress={toggleVibration}
+      onPress={handleVibrationPress}
       className={`py-2 pl-5 pr-3 rounded-lg mb-1.5 flex-row items-center justify-between ${
         isDarkMode ? "bg-gray-700" : "bg-gray-200"
       }`}
@@ -323,7 +332,6 @@ export function SettingsVibrationOption({
           size={20}
           color={isDarkMode ? "white" : "black"}
         />
-
         <Text className={`ml-2 ${isDarkMode ? "text-white" : "text-black"}`}>
           Vibration
         </Text>
@@ -332,8 +340,9 @@ export function SettingsVibrationOption({
         style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
         trackColor={{ false: "#767577", true: "#81b0ff" }}
         thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
-        onValueChange={toggleVibration}
         value={isEnabled}
+        onValueChange={handleVibrationPress}
+        pointerEvents="none"
       />
     </TouchableOpacity>
   );
