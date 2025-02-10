@@ -95,7 +95,7 @@ export default function Slide4({
           duration: 400,
           useNativeDriver: true,
         }).start();
-      }, 400);
+      }, 5000);
 
       setHasAnimated(true);
     }

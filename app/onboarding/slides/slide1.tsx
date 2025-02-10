@@ -34,11 +34,6 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
 
       // Start main content animations
       Animated.sequence([
-        Animated.timing(imageAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,

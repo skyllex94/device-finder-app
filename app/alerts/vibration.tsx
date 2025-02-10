@@ -304,13 +304,13 @@ export function SettingsVibrationOption({
   }, []);
 
   const handleVibrationPress = async () => {
-    // if (!isProMember) {
-    //   onClose();
-    //   setTimeout(() => {
-    //     router.push("/paywall");
-    //   }, 100);
-    //   return;
-    // }
+    if (!isProMember) {
+      onClose();
+      setTimeout(() => {
+        router.push("/paywall");
+      }, 100);
+      return;
+    }
 
     const newState = await VibrationManager.toggleVibration();
     setIsEnabled(newState);

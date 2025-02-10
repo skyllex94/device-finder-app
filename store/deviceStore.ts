@@ -7,6 +7,7 @@ interface DeviceStore {
   updateDevices: (devices: Device[]) => void;
   setActiveDevice: (deviceId: string) => void;
   getActiveDevice: () => Device | undefined;
+  reset: () => void;
 }
 
 export const useDeviceStore = create<DeviceStore>((set, get) => ({
@@ -18,4 +19,5 @@ export const useDeviceStore = create<DeviceStore>((set, get) => ({
     const { devices, activeDeviceId } = get();
     return devices.find((d) => d.id === activeDeviceId);
   },
+  reset: () => set({ devices: [], activeDeviceId: null }),
 }));

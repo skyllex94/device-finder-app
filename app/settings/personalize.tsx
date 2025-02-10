@@ -1,14 +1,113 @@
-import { View, Text, Switch, TouchableOpacity } from "react-native";
-import React from "react";
+import { View, Text, Switch, TouchableOpacity, Modal } from "react-native";
+import React, { useState } from "react";
 import { useThemeStore } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSettingsStore } from "@/store/settingsStore";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDeviceStore } from "@/store/deviceStore";
 
 export default function PersonalizeSettings() {
   const { isDarkMode, toggleTheme } = useThemeStore();
   const router = useRouter();
   const { distanceUnit, setDistanceUnit } = useSettingsStore();
+  const [showClearModal, setShowClearModal] = useState(false);
+
+  const handleClearData = async () => {
+    try {
+      // Get all keys from AsyncStorage
+      const keys = await AsyncStorage.getAllKeys();
+
+      // Filter out 'isFirstOpen' from the keys to be removed
+      const keysToRemove = keys.filter((key) => key !== "isFirstOpen");
+
+      // Remove all keys except 'isFirstOpen'
+      await AsyncStorage.multiRemove(keysToRemove);
+
+      // Reset all stores to their initial state
+      useDeviceStore.getState().reset();
+      useSettingsStore.getState().reset();
+
+      setShowClearModal(false);
+      router.replace("/");
+    } catch (error) {
+      console.error("Error clearing data:", error);
+    }
+  };
+
+  const ClearDataModal = () => (
+    <Modal
+      visible={showClearModal}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowClearModal(false)}
+    >
+      <TouchableOpacity
+        className="flex-1 bg-black/50"
+        activeOpacity={1}
+        onPress={() => setShowClearModal(false)}
+      >
+        <View className="flex-1 items-center justify-center px-4">
+          <View
+            className={`w-[85%] rounded-2xl p-6 ${
+              isDarkMode ? "bg-gray-800" : "bg-white"
+            }`}
+          >
+            <View className="items-center mb-4">
+              <View
+                className="w-16 h-16 rounded-full items-center justify-center mb-4"
+                style={{ backgroundColor: "rgba(239, 68, 68, 0.1)" }}
+              >
+                <Ionicons name="trash-outline" size={30} color="#ef4444" />
+              </View>
+              <Text
+                className={`text-xl font-bold mb-2 ${
+                  isDarkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
+                Clear All Data
+              </Text>
+              <Text
+                className={`text-center ${
+                  isDarkMode ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                Are you sure you want to clear all app data? This action cannot
+                be undone.
+              </Text>
+            </View>
+
+            <View className="flex-row space-x-3">
+              <TouchableOpacity
+                onPress={handleClearData}
+                className={`flex-1 py-3 rounded-lg  mr-2 ${
+                  isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                }`}
+              >
+                <Text className="text-center font-semibold text-red-500">
+                  Clear
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowClearModal(false)}
+                className={`flex-1 py-3 rounded-lg ${
+                  isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                }`}
+              >
+                <Text
+                  className={`text-center font-semibold ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
 
   return (
     <View className="px-4 pt-4">
@@ -90,12 +189,15 @@ export default function PersonalizeSettings() {
             </View>
           </View>
 
-          <TouchableOpacity className="flex-row items-center justify-between p-4">
+          <TouchableOpacity
+            onPress={() => setShowClearModal(true)}
+            className="flex-row items-center justify-between p-4"
+          >
             <View className="flex-row items-center">
               <Ionicons
                 name="trash-outline"
                 size={20}
-                color={isDarkMode ? "#fff" : "#000"}
+                color={isDarkMode ? "white" : "black"}
               />
               <Text
                 className={`ml-3 ${isDarkMode ? "text-white" : "text-black"}`}
@@ -111,6 +213,8 @@ export default function PersonalizeSettings() {
           </TouchableOpacity>
         </View>
       </View>
+
+      <ClearDataModal />
     </View>
   );
 }

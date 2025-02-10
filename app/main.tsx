@@ -414,6 +414,7 @@ export default function MainScreen() {
                 {}
               );
 
+              // Use a functional update to prevent state conflicts
               setOtherDevices((prevDevices) => {
                 const existingDeviceIndex = prevDevices.findIndex(
                   (d) => d.id === device.id
@@ -447,8 +448,11 @@ export default function MainScreen() {
                     location: deviceLocation,
                   };
 
-                  // Update store
-                  useDeviceStore.getState().updateDevices(updatedDevices);
+                  // Update store outside of render
+                  setTimeout(() => {
+                    useDeviceStore.getState().updateDevices(updatedDevices);
+                  }, 0);
+
                   return updatedDevices;
                 }
 
@@ -475,7 +479,12 @@ export default function MainScreen() {
                 };
 
                 const newDevices = [...prevDevices, newDevice];
-                useDeviceStore.getState().updateDevices(newDevices);
+
+                // Update store outside of render
+                setTimeout(() => {
+                  useDeviceStore.getState().updateDevices(newDevices);
+                }, 0);
+
                 return newDevices;
               });
             } catch (error) {
@@ -1024,35 +1033,6 @@ export default function MainScreen() {
         isDarkMode={isDarkMode}
         height={height}
       />
-
-      {/* New Search Button */}
-      {/* <View className="items-center">
-        <View className="absolute bottom-10 w-[90%] overflow-hidden rounded-full">
-          <LinearGradient
-            colors={
-              isDarkMode ? ["#DBEAFE", "#3B82F6"] : ["#2563EB", "#1D4ED8"]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <View className="items-center justify-center">
-              <TouchableOpacity onPress={handleStartSearch} className="w-full">
-                <View className="flex-row items-center space-x-2 p-4">
-                  <Ionicons
-                    name="search"
-                    className="mr-2"
-                    size={20}
-                    color="#fff"
-                  />
-                  <Text className="text-white font-semibold text-lg">
-                    New Search
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-        </View>
-      </View> */}
 
       <View className="absolute bottom-10 w-full items-center">
         <TouchableOpacity
