@@ -96,15 +96,15 @@ export default function Slide3({ isVisible = false }: Slide3Props) {
       const textAnimations = textAnims.map((anim, index) =>
         Animated.timing(anim, {
           toValue: 1,
-          duration: 600,
-          delay: index * 300, // Start after all bubbles
+          duration: 200,
+          delay: index * 200, // Start after all bubbles
           useNativeDriver: true,
         })
       );
 
       Animated.sequence([
-        Animated.stagger(200, bubbleAnimations),
-        Animated.stagger(200, textAnimations),
+        Animated.stagger(100, bubbleAnimations),
+        Animated.stagger(100, textAnimations),
       ]).start(() => {
         setHasAnimated(true);
       });
@@ -127,7 +127,7 @@ export default function Slide3({ isVisible = false }: Slide3Props) {
       >
         <View
           style={{ width: BUBBLE_SIZE, height: BUBBLE_SIZE }}
-          className="rounded-full items-center justify-center border-2 border-dashed border-blue-300 bg-white shadow-sm"
+          className="rounded-full items-center justify-center border-2 border-dashed border-blue-300 shadow-sm"
         >
           {method.icon}
         </View>
@@ -176,7 +176,7 @@ export default function Slide3({ isVisible = false }: Slide3Props) {
   };
 
   return (
-    <SafeAreaView style={{ width }} className="flex-1 bg-white">
+    <SafeAreaView style={{ width }} className="flex-1">
       <View className="flex-1 px-6">
         <Text className="text-3xl font-bold text-center mt-8 mb-10 text-gray-800">
           Many ways to track:

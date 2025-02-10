@@ -60,13 +60,13 @@ export default function Slide2({ isVisible = false }: Slide2Props) {
           Animated.parallel([
             Animated.timing(fadeAnims[index], {
               toValue: 1,
-              duration: 1000,
+              duration: 800,
               delay: index * 600,
               useNativeDriver: true,
             }),
             Animated.timing(slideAnims[index], {
               toValue: 0,
-              duration: 1000,
+              duration: 800,
               delay: index * 600,
               useNativeDriver: true,
             }),
@@ -82,7 +82,7 @@ export default function Slide2({ isVisible = false }: Slide2Props) {
   }, [isVisible]);
 
   return (
-    <SafeAreaView style={{ width }} className="flex-1 bg-white">
+    <SafeAreaView style={{ width }} className="flex-1">
       <View className="flex-1 px-6 pt-8">
         <Text className="text-3xl font-bold text-center mb-12 text-gray-800">
           How does it work?
@@ -103,7 +103,7 @@ export default function Slide2({ isVisible = false }: Slide2Props) {
                 width: "100%",
                 maxWidth: 380,
               }}
-              className="flex-row items-start bg-white p-5 rounded-2xl shadow-lg border border-gray-100"
+              className="flex-row items-start p-5 rounded-2xl shadow-lg border border-gray-300"
             >
               <View className="bg-blue-50 p-4 rounded-xl">{step.icon}</View>
 

@@ -69,12 +69,12 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.3,
-          duration: 2000,
+          duration: 1500,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
           toValue: 1,
-          duration: 2000,
+          duration: 1500,
           useNativeDriver: true,
         }),
       ])
@@ -87,7 +87,7 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
   });
 
   return (
-    <SafeAreaView style={{ width }} className="flex-1 bg-white">
+    <SafeAreaView style={{ width }} className="flex-1">
       <View className="flex-1 items-center justify-between py-8">
         <View className="flex-1 items-center justify-center relative">
           <Animated.View
@@ -141,7 +141,7 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
             </Text>
             <Text className="font-medium text-center text-gray-600 text-lg mb-8 px-4">
               The smart way to track and locate your Bluetooth devices with
-              precision
+              accuracy.
             </Text>
           </Animated.View>
         </View>

@@ -100,7 +100,7 @@ export default function OnBoarding() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-gray-100">
       <Spinner visible={purchaseSpinner} />
       <StatusBar style="dark" />
 
@@ -128,7 +128,7 @@ export default function OnBoarding() {
         ref={slidesRef}
       />
 
-      <View className="items-center bg-white pb-10">
+      <View className="items-center pb-10">
         <Indicator data={slides} scrollX={scrollX} />
 
         <NextButton
