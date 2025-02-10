@@ -24,11 +24,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { useDeviceStore } from "../store/deviceStore";
 import { useSettingsStore } from "../store/settingsStore";
-import {
-  useProximityVibration,
-  VibrationManager,
-  VibrationModal,
-} from "./alerts/vibration";
+import { useProximityVibration, VibrationModal } from "./alerts/vibration";
 import { SettingsVibrationOption } from "./alerts/vibration";
 import {
   NotificationOption,
@@ -119,7 +115,7 @@ function SettingsModal({
                         name="lock-closed"
                         size={16}
                         color={isDarkMode ? "#9CA3AF" : "#4B5563"}
-                        style={{ marginRight: 8 }}
+                        style={{ marginRight: 4 }}
                       />
                     )}
                     <Ionicons
@@ -157,7 +153,7 @@ function SettingsModal({
                         name="lock-closed"
                         size={16}
                         color={isDarkMode ? "#9CA3AF" : "#4B5563"}
-                        style={{ marginRight: 8 }}
+                        style={{ marginRight: 4 }}
                       />
                     )}
                     <Ionicons
@@ -205,7 +201,7 @@ export default function DeviceTracker() {
 
   const [isFound, setIsFound] = useState(false);
   const checkScale = useSharedValue(0);
-  const [isVibrationEnabled, setIsVibrationEnabled] = useState(false);
+
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showVibrationModal, setShowVibrationModal] = useState(false);
 
@@ -218,11 +214,6 @@ export default function DeviceTracker() {
 
   // Initialize vibration monitoring
   useProximityVibration(deviceId as string);
-
-  // Load initial vibration state
-  useEffect(() => {
-    VibrationManager.isVibrationEnabled().then(setIsVibrationEnabled);
-  }, []);
 
   // Add notification monitoring
   useProximityNotifications(deviceId as string);
@@ -408,7 +399,7 @@ export default function DeviceTracker() {
       className={`flex-1 ${isDarkMode ? "bg-black" : "bg-gray-200"}`}
       style={{ paddingTop: 60 }}
     >
-      {/* Header with Map Button */}
+      {/* Header */}
       <View className="flex-row items-center justify-between px-4 mb-6">
         <View className="flex-row items-center flex-1">
           <TouchableOpacity onPress={() => router.back()} className="p-2">
@@ -439,7 +430,7 @@ export default function DeviceTracker() {
         </TouchableOpacity>
       </View>
 
-      <View className="flex-1 items-center justify-center">
+      <View className="flex-1 mb-24 items-center justify-center">
         <View
           style={{
             width: outerRingSize,
@@ -584,9 +575,9 @@ export default function DeviceTracker() {
       {/* Success Check Mark - centered in circle */}
       <Animated.View
         style={[checkStyle]}
-        className="absolute top-[62px] z-20 w-full h-full items-center justify-center"
+        className="absolute top-6 z-20 w-full h-full items-center justify-center"
       >
-        <Ionicons name="checkmark-circle" size={100} color="white" />
+        <Ionicons name="checkmark-circle" size={110} color="white" />
       </Animated.View>
 
       {/* Found Device Button */}

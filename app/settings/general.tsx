@@ -3,12 +3,14 @@ import React, { useState } from "react";
 import { useThemeStore } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import * as Sharing from "expo-sharing";
+
 import TipModal from "./tip";
+import useRevenueCat from "@/hooks/useRevenueCat";
 
 export default function GeneralSettings() {
   const { isDarkMode } = useThemeStore();
   const router = useRouter();
+  const { isProMember } = useRevenueCat();
 
   const [showTipModal, setShowTipModal] = useState(false);
 
@@ -65,30 +67,32 @@ export default function GeneralSettings() {
             isDarkMode ? "bg-gray-800" : "bg-slate-100"
           }`}
         >
-          <TouchableOpacity
-            onPress={() => router.push("/privacy")}
-            className={`flex-row items-center justify-between p-4 border-b ${
-              isDarkMode ? "border-gray-700" : "border-gray-300"
-            }`}
-          >
-            <View className="flex-row items-center">
+          {!isProMember && (
+            <TouchableOpacity
+              onPress={() => router.push("/paywall")}
+              className={`flex-row items-center justify-between p-4 border-b ${
+                isDarkMode ? "border-gray-700" : "border-gray-300"
+              }`}
+            >
+              <View className="flex-row items-center">
+                <Ionicons
+                  name="trophy-outline"
+                  size={20}
+                  color={isDarkMode ? "white" : "black"}
+                />
+                <Text
+                  className={`ml-3 ${isDarkMode ? "text-white" : "text-black"}`}
+                >
+                  Try Premium
+                </Text>
+              </View>
               <Ionicons
-                name="trophy-outline"
+                name="chevron-forward"
                 size={20}
-                color={isDarkMode ? "white" : "black"}
+                color={isDarkMode ? "#9CA3AF" : "#4B5563"}
               />
-              <Text
-                className={`ml-3 ${isDarkMode ? "text-white" : "text-black"}`}
-              >
-                Try Premium
-              </Text>
-            </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={isDarkMode ? "#9CA3AF" : "#4B5563"}
-            />
-          </TouchableOpacity>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             onPress={() => setShowTipModal(true)}

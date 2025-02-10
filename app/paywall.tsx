@@ -3,23 +3,23 @@ import {
   Text,
   SafeAreaView,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   Linking,
   Switch,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { useRouter } from "expo-router";
 import useRevenueCat from "@/hooks/useRevenueCat";
 import Purchases from "react-native-purchases";
 import React, { useState } from "react";
 import Spinner from "react-native-loading-spinner-overlay/lib";
+import { useThemeStore } from "@/components/Themed";
 
-export default function Paywall() {
+export default function Paywall({}) {
   const router = useRouter();
+  const { isDarkMode } = useThemeStore();
 
   const { currentOffering } = useRevenueCat();
   const [purchaseSpinner, setPurchaseSpinner] = useState(false);
@@ -32,6 +32,18 @@ export default function Paywall() {
   const weeklyPrice = currentOffering?.weekly?.product?.price || 0;
   const yearlyPrice = currentOffering?.annual?.product?.price || 0;
   const weeklyPriceFromYearly = (yearlyPrice / 52).toFixed(2);
+
+  const theme = {
+    background: isDarkMode ? "bg-[#021d32]" : "bg-gray-100",
+    gradientTop: isDarkMode ? "#021d32" : "#ffffff",
+    gradientBottom: isDarkMode ? "transparent" : "transparent",
+    text: isDarkMode ? "text-white" : "text-gray-900",
+    textSecondary: isDarkMode ? "text-gray-300" : "text-gray-600",
+    cardBg: isDarkMode ? "bg-[#062844]" : "bg-white",
+    cardBgSelected: isDarkMode ? "bg-[#0A3A5A]" : "bg-blue-50",
+    border: isDarkMode ? "border-gray-600" : "border-gray-200",
+    borderSelected: isDarkMode ? "border-[#FFD700]" : "border-blue-500",
+  };
 
   async function buySubscription(subscription: string) {
     setPurchaseSpinner(true);
@@ -102,15 +114,15 @@ export default function Paywall() {
   return (
     <React.Fragment>
       {!currentOffering ? (
-        <SafeAreaView className="flex-1 bg-[#021d32]">
+        <SafeAreaView className={`flex-1 ${theme.background}`}>
           <ActivityIndicator className="pt-12" size="large" color="#FFD700" />
         </SafeAreaView>
       ) : (
-        <SafeAreaView className="flex-1 bg-[#021d32]">
+        <SafeAreaView className={`flex-1 ${theme.background}`}>
           <Spinner visible={purchaseSpinner} />
 
-          {/* Image Container with Gradient */}
-          <View className="h-[45%] w-full absolute top-0">
+          {/* Image Container with Gradient (Out for now) */}
+          {/* <View className="h-[45%] w-full absolute top-0">
             <View className="h-full w-full overflow-hidden">
               <Image
                 source={require("../assets/images/new_paywall_image.jpg")}
@@ -119,7 +131,7 @@ export default function Paywall() {
               />
             </View>
             <LinearGradient
-              colors={["transparent", "#021d32"]}
+              colors={[theme.gradientTop, theme.gradientBottom]}
               style={{
                 position: "absolute",
                 left: 0,
@@ -129,7 +141,7 @@ export default function Paywall() {
               }}
             />
             <LinearGradient
-              colors={["#021d32", "transparent"]}
+              colors={[theme.gradientTop, theme.gradientBottom]}
               style={{
                 position: "absolute",
                 left: 0,
@@ -138,14 +150,15 @@ export default function Paywall() {
                 height: "100%",
               }}
               start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
+              end={{ x: 0, y: 0 }}
             />
-          </View>
+          </View> */}
 
           <View className="flex-1 px-6">
             {/* Header */}
-
-            <Text className="text-white text-center font-bold text-[28px] mb-10 mt-8">
+            <Text
+              className={`${theme.text} text-center font-bold text-[28px] mb-10 mt-8`}
+            >
               Review our Benefits
             </Text>
 
@@ -156,7 +169,11 @@ export default function Paywall() {
               activeOpacity={0.7}
               style={{ opacity: 0.2 }}
             >
-              <Ionicons name="close-circle" size={34} color="#1E90FF" />
+              <Ionicons
+                name="close-circle"
+                size={34}
+                color={isDarkMode ? "#1E90FF" : "black"}
+              />
             </TouchableOpacity>
 
             {/* Content Container - pushes content to bottom */}
@@ -166,13 +183,19 @@ export default function Paywall() {
                 {/* Signal Heatmap */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
-                    <Ionicons name="radio-outline" size={28} color="#FFD700" />
+                    <Ionicons
+                      name="radio-outline"
+                      size={28}
+                      color={isDarkMode ? "#FFD700" : "black"}
+                    />
                   </View>
                   <View className="w-[80%]">
-                    <Text className="text-white font-semibold text-[16px] mb-1">
+                    <Text
+                      className={`${theme.text} font-semibold text-[16px] mb-1`}
+                    >
                       Signal Heatmap
                     </Text>
-                    <Text className="text-gray-300 text-[14px]">
+                    <Text className={theme.textSecondary}>
                       Visualize signal strength patterns to optimize device
                       tracking
                     </Text>
@@ -182,13 +205,19 @@ export default function Paywall() {
                 {/* Map View */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
-                    <Ionicons name="map-outline" size={28} color="#FFD700" />
+                    <Ionicons
+                      name="map-outline"
+                      size={28}
+                      color={isDarkMode ? "#FFD700" : "black"}
+                    />
                   </View>
                   <View className="w-[80%]">
-                    <Text className="text-white font-semibold text-[16px] mb-1">
+                    <Text
+                      className={`${theme.text} font-semibold text-[16px] mb-1`}
+                    >
                       Map View
                     </Text>
-                    <Text className="text-gray-300 text-[14px]">
+                    <Text className={theme.textSecondary}>
                       Track device locations with precise mapping integration
                     </Text>
                   </View>
@@ -197,13 +226,19 @@ export default function Paywall() {
                 {/* Unlimited Radar Proximity Tracker */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
-                    <Ionicons name="bluetooth" size={28} color="#FFD700" />
+                    <Ionicons
+                      name="bluetooth-outline"
+                      size={28}
+                      color={isDarkMode ? "#FFD700" : "black"}
+                    />
                   </View>
                   <View className="w-[80%]">
-                    <Text className="text-white font-semibold text-[16px] mb-1">
+                    <Text
+                      className={`${theme.text} font-semibold text-[16px] mb-1`}
+                    >
                       Unlimited Accurate Tracker
                     </Text>
-                    <Text className="text-gray-300 text-[14px]">
+                    <Text className={theme.textSecondary}>
                       Get the main feature of the app with unlimited destination
                       tracking.
                     </Text>
@@ -213,17 +248,19 @@ export default function Paywall() {
                 {/* Proximity Vibrations */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
-                    <MaterialCommunityIcons
-                      name="vibrate"
+                    <Ionicons
+                      name="bonfire-outline"
                       size={28}
-                      color="#FFD700"
+                      color={isDarkMode ? "#FFD700" : "black"}
                     />
                   </View>
                   <View className="w-[80%]">
-                    <Text className="text-white font-semibold text-[16px] mb-1">
+                    <Text
+                      className={`${theme.text} font-semibold text-[16px] mb-1`}
+                    >
                       Proximity Vibrations
                     </Text>
-                    <Text className="text-gray-300 text-[14px]">
+                    <Text className={theme.textSecondary}>
                       Get haptic feedback as you get closer to your device
                     </Text>
                   </View>
@@ -235,14 +272,16 @@ export default function Paywall() {
                     <Ionicons
                       name="notifications-outline"
                       size={28}
-                      color="#FFD700"
+                      color={isDarkMode ? "#FFD700" : "black"}
                     />
                   </View>
                   <View className="w-[80%]">
-                    <Text className="text-white font-semibold text-[16px] mb-1">
+                    <Text
+                      className={`${theme.text} font-semibold text-[16px] mb-1`}
+                    >
                       Smart Notifications
                     </Text>
-                    <Text className="text-gray-300 text-[14px]">
+                    <Text className={theme.textSecondary}>
                       Receive alerts when devices enter or leave your range
                     </Text>
                   </View>
@@ -251,13 +290,19 @@ export default function Paywall() {
                 {/* Continuous Accuracy Refinement */}
                 <View className="flex-row">
                   <View className="w-[20%] items-center pt-1">
-                    <Ionicons name="location-sharp" size={28} color="#FFD700" />
+                    <Ionicons
+                      name="location-outline"
+                      size={28}
+                      color={isDarkMode ? "#FFD700" : "black"}
+                    />
                   </View>
                   <View className="w-[80%]">
-                    <Text className="text-white font-semibold text-[16px] mb-1">
+                    <Text
+                      className={`${theme.text} font-semibold text-[16px] mb-1`}
+                    >
                       Accuracy Refinement
                     </Text>
-                    <Text className="text-gray-300 text-[14px]">
+                    <Text className={theme.textSecondary}>
                       Continuosly improving the accuracy with predictive
                       geolocation.
                     </Text>
@@ -267,12 +312,10 @@ export default function Paywall() {
 
               {/* Free Trial Toggle */}
               <View
-                className={`px-5 py-3 rounded-3xl border bg-[#062844] border-gray-600 mb-2`}
+                className={`px-5 py-3 rounded-3xl border ${theme.cardBg} ${theme.border} mb-2`}
               >
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-white text-[14px]">
-                    Enable Free Trial
-                  </Text>
+                  <Text className={theme.text}>Enable Free Trial</Text>
                   <Switch
                     value={isFreeTrial}
                     onValueChange={(value) => {
@@ -291,8 +334,8 @@ export default function Paywall() {
                 <TouchableOpacity
                   className={`p-5 mb-2 rounded-3xl border ${
                     selectedPlan === "yearly"
-                      ? "bg-[#0A3A5A] border-[#FFD700]"
-                      : "bg-[#062844] border-gray-600"
+                      ? `${theme.cardBgSelected} ${theme.borderSelected}`
+                      : `${theme.cardBg} ${theme.border}`
                   }`}
                   activeOpacity={0.7}
                   onPress={() => {
@@ -307,19 +350,25 @@ export default function Paywall() {
                   </View>
                   <View className="flex-row justify-between items-center">
                     <View>
-                      <Text className="text-white font-semibold text-[16px]">
+                      <Text
+                        className={`${theme.text} font-semibold text-[16px]`}
+                      >
                         Yearly Access
                       </Text>
-                      <Text className="text-gray-300 text-[10px] mt-1">
+                      <Text
+                        className={`${theme.textSecondary} text-[10px] mt-1`}
+                      >
                         Only ${yearlyPrice} per year
                       </Text>
                     </View>
                     <View className="flex-row items-center justify-center">
                       <View>
-                        <Text className="text-white text-right text-[16px]">
+                        <Text
+                          className={`${theme.text} text-right text-[16px]`}
+                        >
                           ${weeklyPriceFromYearly}
                         </Text>
-                        <Text className="text-gray-300 text-[12px]">
+                        <Text className={`${theme.textSecondary} text-[12px]`}>
                           per week
                         </Text>
                       </View>
@@ -338,8 +387,8 @@ export default function Paywall() {
                 <TouchableOpacity
                   className={`p-5 rounded-3xl border ${
                     selectedPlan === "weekly"
-                      ? "bg-[#0A3A5A] border-[#1E90FF]"
-                      : "bg-[#062844] border-gray-600"
+                      ? `${theme.cardBgSelected} ${theme.borderSelected}`
+                      : `${theme.cardBg} ${theme.border}`
                   }`}
                   activeOpacity={0.7}
                   onPress={() => {
@@ -348,16 +397,20 @@ export default function Paywall() {
                 >
                   <View className="flex-row justify-between items-center">
                     <View>
-                      <Text className="text-white font-semibold text-[16px]">
+                      <Text
+                        className={`${theme.text} font-semibold text-[16px]`}
+                      >
                         Weekly Access
                       </Text>
                     </View>
                     <View className="flex-row items-center justify-center">
                       <View>
-                        <Text className="text-white text-right text-[16px]">
+                        <Text
+                          className={`${theme.text} text-right text-[16px]`}
+                        >
                           ${weeklyPrice}
                         </Text>
-                        <Text className="text-gray-300 text-[12px]">
+                        <Text className={`${theme.textSecondary} text-[12px]`}>
                           per week
                         </Text>
                       </View>
@@ -397,20 +450,24 @@ export default function Paywall() {
                       )
                     }
                   >
-                    <Text className="text-gray-400 text-[12px]">
+                    <Text className={`${theme.textSecondary} text-[12px]`}>
                       Privacy Policy
                     </Text>
                   </TouchableOpacity>
-                  <Text className="text-gray-400 text-[12px] mx-3">|</Text>
+                  <Text className={`${theme.textSecondary} text-[12px] mx-3`}>
+                    |
+                  </Text>
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={restorePurchase}
                   >
-                    <Text className="text-gray-400 text-[12px]">
+                    <Text className={`${theme.textSecondary} text-[12px]`}>
                       Restore Purchase
                     </Text>
                   </TouchableOpacity>
-                  <Text className="text-gray-400 text-[12px] mx-3">|</Text>
+                  <Text className={`${theme.textSecondary} text-[12px] mx-3`}>
+                    |
+                  </Text>
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() =>
@@ -419,7 +476,7 @@ export default function Paywall() {
                       )
                     }
                   >
-                    <Text className="text-gray-400 text-[12px]">
+                    <Text className={`${theme.textSecondary} text-[12px]`}>
                       Terms of Use
                     </Text>
                   </TouchableOpacity>

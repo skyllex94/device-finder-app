@@ -1,119 +1,143 @@
-import { useCallback, useState } from "react";
-import {
-  View,
-  Text,
-  useWindowDimensions,
-  FlatList,
-  TouchableOpacity,
-} from "react-native";
-import { useRouter } from "expo-router";
+import React, { useRef, useState } from "react";
+import { FlatList, Animated, View, ListRenderItemInfo } from "react-native";
+
+import slides from "../app/onboarding/slides";
+import OnBoardingItem from "./onboarding/item";
+import Indicator from "./onboarding/indicator";
+import NextButton from "./onboarding/next_button";
+
+import Purchases from "react-native-purchases";
+import useRevenueCat from "@/hooks/useRevenueCat";
+import Spinner from "react-native-loading-spinner-overlay";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
-const slides = [
-  {
-    id: "1",
-    title: "Find Devices",
-    description: "Easily locate and track Bluetooth devices around you",
-    icon: "bluetooth-searching",
-  },
-  {
-    id: "2",
-    title: "Real-Time Tracking",
-    description: "Get accurate location and signal strength data",
-    icon: "location",
-  },
-  {
-    id: "3",
-    title: "Save History",
-    description: "Keep track of all your discovered devices locally",
-    icon: "save",
-  },
-];
+// Define the shape of the slides
+interface Slide {
+  id: number;
+  title: string;
+  description: string;
+  image: any;
+}
 
-export default function Onboarding() {
-  const { width } = useWindowDimensions();
+export default function OnBoarding() {
   const router = useRouter();
-  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const finishOnboarding = useCallback(async () => {
-    try {
-      await AsyncStorage.setItem("isFirstOpen", "false");
-      router.replace("/main");
-    } catch (error) {
-      console.error("Error saving onboarding state:", error);
+  const [currSlide, setCurrSlide] = useState<number>(0);
+  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "yearly">(
+    "weekly"
+  );
+  const [isFreeTrial, setIsFreeTrial] = useState(false);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const slidesRef = useRef<FlatList<Slide> | null>(null);
+
+  const viewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
+      if (viewableItems[0]?.index !== null) {
+        setCurrSlide(viewableItems[0].index);
+      }
     }
-  }, []);
+  ).current;
 
-  const renderItem = ({
-    item,
-    index,
-  }: {
-    item: (typeof slides)[0];
-    index: number;
-  }) => (
-    <View className="flex-1 items-center justify-center p-5" style={{ width }}>
-      <Ionicons
-        name={item.icon as any}
-        size={100}
-        className="text-blue-500 mb-6"
-      />
-      <Text className="text-2xl font-bold text-white mb-3 text-center">
-        {item.title}
-      </Text>
-      <Text className="text-base text-white text-center px-5">
-        {item.description}
-      </Text>
+  const { currentOffering } = useRevenueCat();
+  const [purchaseSpinner, setPurchaseSpinner] = useState<boolean>(false);
 
-      {index === slides.length - 1 && (
-        <TouchableOpacity
-          className="bg-blue-500 px-10 py-4 rounded-full mt-10 active:bg-blue-600"
-          onPress={finishOnboarding}
-        >
-          <Text className="text-white font-bold text-base">Get Started</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  async function purchaseSubscription() {
+    setPurchaseSpinner(true);
 
-  const renderDot = ({ index }: { index: number }) => (
-    <View
-      key={index}
-      className={`w-2 h-2 rounded-full bg-white mx-1 ${
-        currentIndex === index ? "opacity-100" : "opacity-50"
-      }`}
-    />
-  );
+    let packageToBuy;
+
+    if (selectedPlan === "weekly") {
+      // Use no-trial package when free trial is off
+      packageToBuy = isFreeTrial
+        ? currentOffering?.weekly
+        : (currentOffering?.availablePackages as unknown as any[])?.find(
+            (pkg) => pkg.identifier === "accufind_weekly_no_trial"
+          );
+    } else {
+      packageToBuy = currentOffering?.annual;
+    }
+
+    if (!packageToBuy) {
+      setPurchaseSpinner(false);
+      return;
+    }
+
+    try {
+      const purchaserInfo = await Purchases.purchasePackage(packageToBuy);
+      if (
+        purchaserInfo?.customerInfo?.entitlements?.active
+          ?.werewolf_subscriptions
+      ) {
+        await AsyncStorage.setItem("isFirstOpen", "false");
+      }
+    } catch (e: any) {
+      if (!e.userCancelled) setPurchaseSpinner(false);
+    }
+    setPurchaseSpinner(false);
+  }
+
+  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+
+  const slideForward = async () => {
+    if (currSlide < slides.length - 1) {
+      slidesRef.current?.scrollToIndex({ index: currSlide + 1 });
+    } else {
+      try {
+        await purchaseSubscription();
+        const value = await AsyncStorage.getItem("isFirstOpen");
+        if (value === "false") router.replace("/main");
+      } catch (err) {
+        console.log("Error @setItem on isFirstOpen:", err);
+      }
+    }
+  };
+
+  const handlePlanSelect = (plan: "weekly" | "yearly", freeTrial: boolean) => {
+    setSelectedPlan(plan);
+    setIsFreeTrial(freeTrial);
+  };
 
   return (
-    <View className="flex-1 bg-black">
-      <StatusBar style="light" />
-
-      <TouchableOpacity
-        className="absolute top-14 right-5 z-10"
-        onPress={finishOnboarding}
-      >
-        <Text className="text-white text-base">Skip</Text>
-      </TouchableOpacity>
+    <View className="flex-1 bg-white">
+      <Spinner visible={purchaseSpinner} />
+      <StatusBar style="dark" />
 
       <FlatList
         data={slides}
-        renderItem={renderItem}
         horizontal
-        pagingEnabled
         showsHorizontalScrollIndicator={false}
+        pagingEnabled
         bounces={false}
-        onScroll={(e) => {
-          const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
-          setCurrentIndex(newIndex);
-        }}
-        scrollEventThrottle={16}
-        className="flex-1"
+        renderItem={({ item, index }: ListRenderItemInfo<Slide>) => (
+          <OnBoardingItem
+            item={item}
+            isVisible={index === currSlide}
+            onPlanSelect={index === 3 ? handlePlanSelect : undefined}
+          />
+        )}
+        keyExtractor={(item) => item.id.toString()}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false }
+        )}
+        onViewableItemsChanged={viewableItemsChanged}
+        viewabilityConfig={viewConfig}
+        scrollEventThrottle={32}
+        ref={slidesRef}
       />
 
-      <View className="flex-row justify-center items-center absolute bottom-24 left-0 right-0">
-        {slides.map((_, index) => renderDot({ index }))}
+      <View className="items-center bg-white pb-10">
+        <Indicator data={slides} scrollX={scrollX} />
+
+        <NextButton
+          slideForward={slideForward}
+          percentage={(currSlide + 1) * (100 / slides.length)}
+          currSlide={currSlide}
+          currentOffering={currentOffering}
+          selectedPlan={selectedPlan}
+        />
       </View>
     </View>
   );

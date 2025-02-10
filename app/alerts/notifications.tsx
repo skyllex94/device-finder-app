@@ -237,14 +237,23 @@ export function NotificationOption({
           Notifications
         </Text>
       </View>
-
-      <Switch
-        style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
-        trackColor={{ false: "#767577", true: "#81b0ff" }}
-        thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
-        onValueChange={handleNotificationPress}
-        value={isEnabled}
-      />
+      <View className="flex-row items-center justify-center">
+        {!isProMember && (
+          <Ionicons
+            name="lock-closed"
+            size={16}
+            color={isDarkMode ? "#9CA3AF" : "#4B5563"}
+            style={{ marginRight: 4 }}
+          />
+        )}
+        <Switch
+          style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+          trackColor={{ false: "#767577", true: "#81b0ff" }}
+          thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
+          onValueChange={handleNotificationPress}
+          value={isEnabled}
+        />
+      </View>
     </TouchableOpacity>
   );
 }

@@ -7,8 +7,8 @@ import {
   Text,
   Switch,
 } from "react-native";
-import { useDeviceStore } from "../../store/deviceStore";
-import { useSettingsStore } from "../../store/settingsStore";
+import { useDeviceStore } from "../store/deviceStore";
+import { useSettingsStore } from "../store/settingsStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -304,13 +304,13 @@ export function SettingsVibrationOption({
   }, []);
 
   const handleVibrationPress = async () => {
-    // if (!isProMember) {
-    //   onClose();
-    //   setTimeout(() => {
-    //     router.push("/paywall");
-    //   }, 100);
-    //   return;
-    // }
+    if (!isProMember) {
+      onClose();
+      setTimeout(() => {
+        router.push("/paywall");
+      }, 100);
+      return;
+    }
 
     const newState = await VibrationManager.toggleVibration();
     setIsEnabled(newState);
@@ -336,24 +336,14 @@ export function SettingsVibrationOption({
           Vibration
         </Text>
       </View>
-      <View className="flex-row items-center justify-center">
-        {!isProMember && (
-          <Ionicons
-            name="lock-closed"
-            size={16}
-            color={isDarkMode ? "#9CA3AF" : "#4B5563"}
-            style={{ marginRight: 4 }}
-          />
-        )}
-        <Switch
-          style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
-          trackColor={{ false: "#767577", true: "#81b0ff" }}
-          thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
-          value={isEnabled}
-          onValueChange={handleVibrationPress}
-          pointerEvents="none"
-        />
-      </View>
+      <Switch
+        style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+        trackColor={{ false: "#767577", true: "#81b0ff" }}
+        thumbColor={isEnabled ? "#2563eb" : "#f4f3f4"}
+        value={isEnabled}
+        onValueChange={handleVibrationPress}
+        pointerEvents="none"
+      />
     </TouchableOpacity>
   );
 }

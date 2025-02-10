@@ -1,19 +1,24 @@
-import { View, Text, TouchableOpacity, Modal } from "react-native";
+import { View, Text, TouchableOpacity, Modal, Alert } from "react-native";
 import React, { useState } from "react";
-import { useThemeStore } from "@/components/Themed";
-import { useRouter } from "expo-router";
+
 import { Ionicons } from "@expo/vector-icons";
+import useRevenueCat from "@/hooks/useRevenueCat";
+import Purchases from "react-native-purchases";
+import Spinner from "react-native-loading-spinner-overlay/lib";
 
-type TipOption = {
-  amount: number;
-  description: string;
-};
-
-const tipOptions: TipOption[] = [
-  { amount: 0.99, description: "Small Tip" },
-  { amount: 1.99, description: "Nice Tip" },
-  { amount: 2.99, description: "Amazing Tip" },
-  { amount: 4.99, description: "Incredible Support" },
+const tipOptions = [
+  { amount: 0.99, description: "Small Tip", identifier: "accufind_small_tip" },
+  { amount: 1.99, description: "Nice Tip", identifier: "accufind_nice_tip" },
+  {
+    amount: 2.99,
+    description: "Amazing Tip",
+    identifier: "accufind_amazing_tip",
+  },
+  {
+    amount: 4.99,
+    description: "Incredible Support",
+    identifier: "accufind_incredible_tip",
+  },
 ];
 
 type TipModalProps = {
@@ -28,6 +33,34 @@ export default function TipModal({
   isDarkMode,
 }: TipModalProps) {
   const [selectedTip, setSelectedTip] = useState<number | null>(null);
+  const [purchaseSpinner, setPurchaseSpinner] = useState(false);
+  const { currentOffering } = useRevenueCat();
+
+  const handleTipPurchase = async (amount: number, identifier: string) => {
+    setPurchaseSpinner(true);
+
+    try {
+      const tipPackage = (
+        currentOffering?.availablePackages as unknown as any[]
+      )?.find((pkg) => pkg.identifier === identifier);
+
+      if (!tipPackage) {
+        Alert.alert("Error", "Tip package not found");
+        setPurchaseSpinner(false);
+        return;
+      }
+
+      await Purchases.purchasePackage(tipPackage);
+      Alert.alert("Thank You!", "Your support is greatly appreciated!");
+      onClose();
+    } catch (err: any) {
+      if (!err.userCancelled) {
+        Alert.alert("Error", "Failed to process tip");
+      }
+    } finally {
+      setPurchaseSpinner(false);
+    }
+  };
 
   return (
     <Modal
@@ -38,6 +71,7 @@ export default function TipModal({
     >
       <TouchableOpacity className="flex-1" activeOpacity={1} onPress={onClose}>
         <View className="flex-1 justify-end">
+          <Spinner visible={purchaseSpinner} />
           <View
             className={`mx-4 mb-6 rounded-2xl border ${
               isDarkMode
@@ -81,7 +115,10 @@ export default function TipModal({
                 {tipOptions.map((option, index) => (
                   <TouchableOpacity
                     key={option.amount}
-                    onPress={() => setSelectedTip(option.amount)}
+                    onPress={() => {
+                      setSelectedTip(option.amount);
+                      handleTipPurchase(option.amount, option.identifier);
+                    }}
                     className={`p-3 rounded-xl border ${
                       index !== tipOptions.length - 1 ? "mb-1.5" : ""
                     } ${
