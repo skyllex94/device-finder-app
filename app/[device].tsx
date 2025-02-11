@@ -5,6 +5,7 @@ import {
   useWindowDimensions,
   Platform,
   Modal,
+  Linking,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -31,6 +32,7 @@ import {
   useProximityNotifications,
 } from "./alerts/notifications";
 import useRevenueCat from "@/hooks/useRevenueCat";
+import * as StoreReview from "expo-store-review";
 
 function SettingsModal({
   isVisible,
@@ -352,6 +354,24 @@ export default function DeviceTracker() {
         )
       )
     );
+
+    setTimeout(() => {
+      rateApp();
+    }, 3000);
+  };
+
+  const rateApp = async () => {
+    try {
+      if (await StoreReview.hasAction()) {
+        StoreReview.requestReview();
+      } else {
+        const url = `https://apps.apple.com/app/id6741714865`;
+
+        Linking.openURL(url);
+      }
+    } catch (error) {
+      console.error("Error requesting app review:", error);
+    }
   };
 
   const checkStyle = useAnimatedStyle(() => ({

@@ -6,11 +6,12 @@ import {
   useWindowDimensions,
   Modal,
   Platform,
+  Linking,
 } from "react-native";
 import React, { useState, useCallback, useEffect } from "react";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useThemeStore } from "../components/Themed";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -25,7 +26,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useDeviceStore } from "../store/deviceStore";
 import { useSettingsStore } from "../store/settingsStore";
-import useRevenueCat from "@/hooks/useRevenueCat";
+
+import * as StoreReview from "expo-store-review";
 
 interface Device {
   id: string;
@@ -216,9 +218,104 @@ const SearchModal = React.memo(
   )
 );
 
+const HelpModal = React.memo(
+  ({
+    visible,
+    onClose,
+    isDarkMode,
+  }: {
+    visible: boolean;
+    onClose: () => void;
+    isDarkMode: boolean;
+  }) => (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <TouchableOpacity className="flex-1" activeOpacity={1} onPress={onClose}>
+        <View className="flex-1 justify-end">
+          <View
+            className={`mx-4 mb-6 rounded-2xl border ${
+              isDarkMode
+                ? "bg-gray-800 border-gray-700"
+                : "bg-gray-100 border-gray-400"
+            }`}
+          >
+            <View className="p-6">
+              <View className="items-center mb-4">
+                <Text
+                  className={`text-lg font-semibold ${
+                    isDarkMode ? "text-white" : "text-black"
+                  }`}
+                >
+                  Troubleshooting Tips
+                </Text>
+              </View>
+
+              <ScrollView className="max-h-96">
+                <Text
+                  className={`mb-4 ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  If you're having trouble finding your device, here are some
+                  things to check:
+                </Text>
+
+                <View className="space-y-3">
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    • Make sure Bluetooth is enabled on your device
+                  </Text>
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    • Ensure the device is within range (usually 30-60 feet)
+                  </Text>
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    • Check if the device's battery is not depleted
+                  </Text>
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    • Some devices may need to be in pairing mode to be
+                    discovered
+                  </Text>
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    • Try moving to a different location as walls and
+                    interference can affect signal strength
+                  </Text>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  )
+);
+
 export default function MainScreen() {
   const router = useRouter();
   const { width, height } = useWindowDimensions();
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   const [otherDevices, setOtherDevices] = useState<Device[]>([]);
   const { isDarkMode, toggleTheme } = useThemeStore();
@@ -231,6 +328,8 @@ export default function MainScreen() {
 
   const [isFilteringDevices, setIsFilteringDevices] = useState(false);
   const { distanceUnit } = useSettingsStore();
+
+  const { showReview } = useLocalSearchParams();
 
   // Refined Kalman Filter parameters for better accuracy
   const KF = {
@@ -1036,6 +1135,19 @@ export default function MainScreen() {
 
       <View className="absolute bottom-10 w-full items-center">
         <TouchableOpacity
+          onPress={() => setShowHelpModal(true)}
+          className="mb-4"
+        >
+          <Text
+            className={`text-sm ${
+              isDarkMode ? "text-gray-400" : "text-gray-600"
+            }`}
+          >
+            Can't find your device?
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           onPress={handleStartSearch}
           className="bg-blue-500 w-[90%] py-4 rounded-full items-center"
         >
@@ -1059,6 +1171,11 @@ export default function MainScreen() {
 
       {renderAddDeviceModal()}
       {renderFilterModal()}
+      <HelpModal
+        visible={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
+        isDarkMode={isDarkMode}
+      />
     </View>
   );
 }
