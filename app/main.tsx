@@ -7,6 +7,7 @@ import {
   Modal,
   Platform,
   Linking,
+  Alert,
 } from "react-native";
 import React, { useState, useCallback, useEffect } from "react";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -26,8 +27,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useDeviceStore } from "../store/deviceStore";
 import { useSettingsStore } from "../store/settingsStore";
-
-import * as StoreReview from "expo-store-review";
 
 interface Device {
   id: string;
@@ -54,9 +53,6 @@ interface SavedDevice {
   name: string;
   originalName: string; // Store original device name
 }
-
-// Initialize BLE Manager
-const bleManager = new BleManager();
 
 const PulsingRing = React.memo(({ delay }: { delay: number }) => {
   const scale = useSharedValue(1);
@@ -331,6 +327,9 @@ export default function MainScreen() {
 
   const { showReview } = useLocalSearchParams();
 
+  const [bluetoothReady, setBluetoothReady] = useState(false);
+  const bleManager = React.useMemo(() => new BleManager(), []);
+
   // Refined Kalman Filter parameters for better accuracy
   const KF = {
     R: 0.08, // Reduced measurement noise
@@ -488,131 +487,172 @@ export default function MainScreen() {
     };
   };
 
-  // Continuous scanning and distance updates
+  // Add this useEffect for initial permission requests
+  useEffect(() => {
+    const requestInitialPermissions = async () => {
+      const permissionsGranted = await requestPermissions();
+      if (!permissionsGranted) {
+        // Optionally show an alert or handle permission denial
+        Alert.alert(
+          "Permissions Required",
+          "AccuFind needs Bluetooth and Location permissions to find nearby devices.",
+          [
+            {
+              text: "Open Settings",
+              onPress: () => Linking.openSettings(),
+            },
+            { text: "Cancel", style: "cancel" },
+          ]
+        );
+      }
+    };
+
+    requestInitialPermissions();
+  }, []);
+
+  // Add this useEffect for Bluetooth state monitoring
+  useEffect(() => {
+    const subscription = bleManager.onStateChange((state) => {
+      if (state === "PoweredOn") {
+        setBluetoothReady(true);
+      } else {
+        setBluetoothReady(false);
+      }
+    }, true); // true = emitCurrentState
+
+    return () => subscription.remove();
+  }, [bleManager]);
+
+  // Modify the scanning useEffect
   useEffect(() => {
     let scanningInterval: NodeJS.Timeout;
 
-    const startContinuousScanning = async () => {
-      const permissionsGranted = await requestPermissions();
-      if (!permissionsGranted) return;
+    const startScanning = async () => {
+      if (!bluetoothReady) {
+        console.log("Bluetooth not ready yet");
+        return;
+      }
 
-      await getCurrentLocation();
+      try {
+        bleManager.startDeviceScan(
+          null,
+          { allowDuplicates: true },
+          async (error, device) => {
+            if (error) {
+              console.error("Scan error:", error);
+              return;
+            }
 
-      bleManager.startDeviceScan(
-        null,
-        { allowDuplicates: true },
-        async (error, device) => {
-          if (error) {
-            console.error("Scan error:", error);
-            return;
-          }
-
-          if (device && device.name) {
-            try {
-              const currentLocation = await Location.getCurrentPositionAsync(
-                {}
-              );
-
-              // Use a functional update to prevent state conflicts
-              setOtherDevices((prevDevices) => {
-                const existingDeviceIndex = prevDevices.findIndex(
-                  (d) => d.id === device.id
+            if (device && device.name) {
+              try {
+                const currentLocation = await Location.getCurrentPositionAsync(
+                  {}
                 );
 
-                if (existingDeviceIndex !== -1) {
-                  // Update existing device
-                  const existingDevice = prevDevices[existingDeviceIndex];
-                  const { distance, rssiHistory, kalmanState } =
-                    calculateStableDistance(
-                      device.rssi || -100,
-                      existingDevice
+                // Use a functional update to prevent state conflicts
+                setOtherDevices((prevDevices) => {
+                  const existingDeviceIndex = prevDevices.findIndex(
+                    (d) => d.id === device.id
+                  );
+
+                  if (existingDeviceIndex !== -1) {
+                    // Update existing device
+                    const existingDevice = prevDevices[existingDeviceIndex];
+                    const { distance, rssiHistory, kalmanState } =
+                      calculateStableDistance(
+                        device.rssi || -100,
+                        existingDevice
+                      );
+                    const roundedDistance = roundToQuarter(distance);
+
+                    const deviceLocation = calculateDeviceLocation(
+                      currentLocation,
+                      distance
                     );
-                  const roundedDistance = roundToQuarter(distance);
+
+                    const updatedDevices = [...prevDevices];
+                    updatedDevices[existingDeviceIndex] = {
+                      ...existingDevice,
+                      rssi: device.rssi || 0,
+                      previousDistance: existingDevice.distance,
+                      distance,
+                      roundedDistance,
+                      rssiHistory,
+                      kalmanState,
+                      lastSeen: new Date(),
+                      location: deviceLocation,
+                    };
+
+                    // Update store outside of render
+                    setTimeout(() => {
+                      useDeviceStore.getState().updateDevices(updatedDevices);
+                    }, 0);
+
+                    return updatedDevices;
+                  }
+
+                  // Add new device
+                  const { distance, rssiHistory, kalmanState } =
+                    calculateStableDistance(device.rssi || -100, {
+                      rssiHistory: [],
+                    } as any);
 
                   const deviceLocation = calculateDeviceLocation(
                     currentLocation,
                     distance
                   );
 
-                  const updatedDevices = [...prevDevices];
-                  updatedDevices[existingDeviceIndex] = {
-                    ...existingDevice,
+                  const newDevice: Device = {
+                    id: device.id,
+                    name: device.name || "Unknown Device",
                     rssi: device.rssi || 0,
-                    previousDistance: existingDevice.distance,
+                    lastSeen: new Date(),
                     distance,
-                    roundedDistance,
                     rssiHistory,
                     kalmanState,
-                    lastSeen: new Date(),
                     location: deviceLocation,
                   };
 
+                  const newDevices = [...prevDevices, newDevice];
+
                   // Update store outside of render
                   setTimeout(() => {
-                    useDeviceStore.getState().updateDevices(updatedDevices);
+                    useDeviceStore.getState().updateDevices(newDevices);
                   }, 0);
 
-                  return updatedDevices;
-                }
-
-                // Add new device
-                const { distance, rssiHistory, kalmanState } =
-                  calculateStableDistance(device.rssi || -100, {
-                    rssiHistory: [],
-                  } as any);
-
-                const deviceLocation = calculateDeviceLocation(
-                  currentLocation,
-                  distance
-                );
-
-                const newDevice: Device = {
-                  id: device.id,
-                  name: device.name || "Unknown Device",
-                  rssi: device.rssi || 0,
-                  lastSeen: new Date(),
-                  distance,
-                  rssiHistory,
-                  kalmanState,
-                  location: deviceLocation,
-                };
-
-                const newDevices = [...prevDevices, newDevice];
-
-                // Update store outside of render
-                setTimeout(() => {
-                  useDeviceStore.getState().updateDevices(newDevices);
-                }, 0);
-
-                return newDevices;
-              });
-            } catch (error) {
-              console.error("Error updating device location:", error);
+                  return newDevices;
+                });
+              } catch (error) {
+                console.error("Error updating device location:", error);
+              }
             }
           }
-        }
-      );
-
-      // Refresh location and clean up old devices every 10 seconds
-      scanningInterval = setInterval(async () => {
-        await getCurrentLocation();
-
-        // Remove devices not seen in the last 30 seconds
-        setOtherDevices((prevDevices) =>
-          prevDevices.filter(
-            (device) => Date.now() - device.lastSeen.getTime() < 30000
-          )
         );
-      }, 10000);
+
+        // Refresh location and clean up old devices every 10 seconds
+        scanningInterval = setInterval(async () => {
+          await getCurrentLocation();
+
+          setOtherDevices((prevDevices) =>
+            prevDevices.filter(
+              (device) => Date.now() - device.lastSeen.getTime() < 30000
+            )
+          );
+        }, 10000);
+      } catch (error) {
+        console.error("Error starting scan:", error);
+      }
     };
 
-    startContinuousScanning();
+    if (bluetoothReady) {
+      startScanning();
+    }
 
     return () => {
       clearInterval(scanningInterval);
       bleManager.stopDeviceScan();
     };
-  }, []);
+  }, [bluetoothReady]);
 
   // Remove the old scanning logic from handleStartSearch
   const handleStartSearch = useCallback(() => {
@@ -642,19 +682,27 @@ export default function MainScreen() {
         const locationStatus =
           await Location.requestForegroundPermissionsAsync();
         if (locationStatus.status !== "granted") {
-          console.log("Location permission denied");
           return false;
         }
       }
 
       // Request Bluetooth permissions
       if (Platform.OS === "ios") {
-        await bleManager.state().then(async (state) => {
-          if (state === "PoweredOff") {
-            console.log("Bluetooth is off");
-            return false;
-          }
-        });
+        const state = await bleManager.state();
+        if (state === "PoweredOff") {
+          Alert.alert(
+            "Bluetooth Required",
+            "Please enable Bluetooth to find nearby devices.",
+            [
+              {
+                text: "Open Settings",
+                onPress: () => Linking.openSettings(),
+              },
+              { text: "Cancel", style: "cancel" },
+            ]
+          );
+          return false;
+        }
       }
 
       return true;
@@ -1156,7 +1204,7 @@ export default function MainScreen() {
       </View>
 
       {/* Reset Button */}
-      <TouchableOpacity
+      {/* <TouchableOpacity
         onPress={handleReset}
         className={`absolute bottom-28 right-4 w-10 h-10 rounded-full items-center justify-center active:opacity-70 ${
           isDarkMode ? "bg-gray-800" : "bg-gray-200"
@@ -1167,7 +1215,7 @@ export default function MainScreen() {
           size={20}
           color={isDarkMode ? "#fff" : "#000"}
         />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
       {renderAddDeviceModal()}
       {renderFilterModal()}

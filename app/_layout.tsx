@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import Purchases from "react-native-purchases";
+import { useThemeStore } from "@/components/Themed";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -20,6 +21,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [appFirstOpened, setAppFirstOpened] = useState<boolean | null>(null);
+  const { isDarkMode } = useThemeStore();
 
   useEffect(() => {
     async function prepare() {
@@ -34,8 +36,8 @@ export default function RootLayout() {
         setAppFirstOpened(isFirstOpen);
         console.log("isFirstOpen:", isFirstOpen);
 
-        // Delay for 1 second for Splash Screen
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Delay for 2 secs for Splash Screen
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (e) {
         console.warn(e);
         setAppFirstOpened(false);
@@ -47,16 +49,17 @@ export default function RootLayout() {
     prepare();
   }, []);
 
+  // RC Configuration
   Purchases.configure({
     apiKey: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ?? "",
   });
 
   if (!isReady) {
-    return <SplashScreen />;
+    return <SplashScreen isDarkMode={isDarkMode} />;
   }
 
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen

@@ -122,7 +122,6 @@ export const VibrationManager = {
   async setVibrationDistance(distance: number) {
     try {
       await AsyncStorage.setItem(DISTANCE_STORAGE_KEY, distance.toString());
-      console.log("Vibration distance set to:", distance);
     } catch (error) {
       console.error("Error setting vibration distance:", error);
     }

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "device-finder-app",
+    "name": "AccuFind",
     "slug": "device-finder-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,9 +14,12 @@
     },
     "ios": {
       "supportsTablet": true,
+      "minIOSVersion": "13.0",
       "infoPlist": {
-        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to find and connect to nearby devices",
-        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to find and connect to nearby devices",
+        "NSBluetoothAlwaysUsageDescription": "Allow AccuFind to use Bluetooth to scan for and connect to nearby devices",
+        "NSBluetoothPeripheralUsageDescription": "Allow AccuFind to use Bluetooth to scan for and connect to nearby devices",
+        "CBCentralUsageDescription": "Allow AccuFind to use Bluetooth to scan for nearby devices",
+        "CBPeripheralUsageDescription": "Allow AccuFind to use Bluetooth to connect to nearby devices",
         "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show your position on the map and find nearby devices",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs access to your location to track nearby devices even when the app is in the background",
         "NSLocationAlwaysUsageDescription": "This app needs access to your location to track nearby devices even when the app is in the background",
@@ -29,10 +32,7 @@
           "bluetooth-peripheral",
           "location",
           "fetch",
-          "bluetooth-central",
-          "bluetooth-peripheral",
-          "location",
-          "fetch"
+          "processing"
         ],
         "ITSAppUsesNonExemptEncryption": false
       },
@@ -40,7 +40,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [
@@ -61,9 +61,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to find nearby devices.",
-          "locationAlwaysPermission": "Allow $(PRODUCT_NAME) to use your location to find nearby devices even when the app is in background.",
-          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location to find nearby devices.",
+          "locationAlwaysAndWhenInUsePermission": "Allow AccuFind to use your location to find nearby devices.",
+          "locationAlwaysPermission": "Allow AccuFind to use your location to find nearby devices even when the app is in background.",
+          "locationWhenInUsePermission": "Allow AccuFind to use your location to find nearby devices.",
           "isIosBackgroundLocationEnabled": true
         }
       ],
@@ -71,21 +71,29 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to save and share screenshots.",
-          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save photos to your photo library.",
+          "photosPermission": "Allow AccuFind to access your photos to save and share screenshots.",
+          "savePhotosPermission": "Allow AccuFind to save photos to your photo library.",
           "isAccessMediaLocationEnabled": true
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera."
+          "cameraPermission": "Allow AccuFind to access your camera."
         }
       ],
       [
         "expo-background-fetch",
         {
           "backgroundFetch": true
+        }
+      ],
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": true,
+          "modes": ["peripheral", "central"],
+          "bluetoothAlways": true
         }
       ]
     ],

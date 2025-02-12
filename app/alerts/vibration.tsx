@@ -17,7 +17,7 @@ import * as TaskManager from "expo-task-manager";
 import useRevenueCat from "@/hooks/useRevenueCat";
 import { useRouter } from "expo-router";
 
-const VIBRATION_PATTERN = [500, 200, 500]; // vibrate, pause, vibrate (in ms)
+const VIBRATION_PATTERN = [500, 200, 500]; // vibrate, pause, vibrate
 const STORAGE_KEY = "vibration_enabled";
 const DISTANCE_STORAGE_KEY = "vibration_distance";
 const DEFAULT_DISTANCE = 0.5;

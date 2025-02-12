@@ -143,7 +143,7 @@ export default function Slide4({
           <TouchableOpacity
             onPress={sendToMainScreen}
             activeOpacity={0.7}
-            style={{ opacity: 0.15 }}
+            style={{ opacity: 0.1 }}
           >
             <Ionicons name="close-circle" size={34} color="black" />
           </TouchableOpacity>
@@ -214,7 +214,7 @@ export default function Slide4({
                     Yearly Access
                   </Text>
                   <Text className="text-gray-600 text-[10px] mt-1">
-                    Only ${yearlyPrice} per year
+                    Only ${yearlyPrice.toFixed(2)} per year
                   </Text>
                 </View>
                 <View className="flex-row items-center justify-center">
@@ -256,7 +256,7 @@ export default function Slide4({
                 <View className="flex-row items-center justify-center">
                   <View>
                     <Text className="text-gray-800 text-right text-[16px]">
-                      ${weeklyPrice}
+                      ${weeklyPrice.toFixed(2)}
                     </Text>
                     <Text className="text-gray-600 text-[12px]">per week</Text>
                   </View>

@@ -17,13 +17,13 @@ export default function MapScreen() {
   // Single useEffect to log device locations
   useEffect(() => {
     // Log all device locations from store
-    console.log("Current device locations:");
+    // console.log("Current device locations:");
     devices.forEach((device) => {
-      console.log(`${device.name}:`, {
-        location: device.location,
-        distance: device.distance ? formatDistance(device.distance) : "unknown",
-        lastSeen: device.lastSeen,
-      });
+      // console.log(`${device.name}:`, {
+      //   location: device.location,
+      //   distance: device.distance ? formatDistance(device.distance) : "unknown",
+      //   lastSeen: device.lastSeen,
+      // });
     });
 
     // Set initial region to first device with location

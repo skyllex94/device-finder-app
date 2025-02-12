@@ -21,7 +21,11 @@ interface Slide {
   image: any;
 }
 
-export default function OnBoarding() {
+interface OnBoardingProps {
+  onComplete?: () => void;
+}
+
+export default function OnBoarding({ onComplete }: OnBoardingProps) {
   const router = useRouter();
 
   const [currSlide, setCurrSlide] = useState<number>(0);
@@ -67,10 +71,12 @@ export default function OnBoarding() {
     try {
       const purchaserInfo = await Purchases.purchasePackage(packageToBuy);
       if (
-        purchaserInfo?.customerInfo?.entitlements?.active
-          ?.werewolf_subscriptions
+        purchaserInfo?.customerInfo?.entitlements?.active?.accufind_payments
       ) {
         await AsyncStorage.setItem("isFirstOpen", "false");
+        // Call onComplete before routing
+        onComplete?.();
+        router.replace("/main");
       }
     } catch (e: any) {
       if (!e.userCancelled) setPurchaseSpinner(false);
@@ -87,7 +93,11 @@ export default function OnBoarding() {
       try {
         await purchaseSubscription();
         const value = await AsyncStorage.getItem("isFirstOpen");
-        if (value === "false") router.replace("/main");
+        if (value === "false") {
+          // Call onComplete before routing
+          onComplete?.();
+          router.replace("/main");
+        }
       } catch (err) {
         console.log("Error @setItem on isFirstOpen:", err);
       }

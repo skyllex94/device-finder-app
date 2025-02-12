@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from "react";
 import { View, Animated, TouchableOpacity, Text } from "react-native";
-import * as StoreReview from "expo-store-review";
 
 // Define the types for the props
 type ContinueButtonProps = {
@@ -56,24 +55,6 @@ export default function NextButton({
       progressAnimation.removeListener(listener);
     };
   }, [progressAnimation, circumference]);
-
-  async function requestReview() {
-    const isAvailable = await StoreReview.isAvailableAsync();
-
-    // A second delay for reading the text
-    if (isAvailable) {
-      setTimeout(() => {
-        StoreReview.requestReview();
-      }, 1000);
-    } else {
-      console.log("Error occured while loading App Store Review");
-    }
-  }
-
-  // Request Review - Help Us Grow page
-  //   useEffect(() => {
-  //     if (currSlide === 3) requestReview();
-  //   }, [currSlide]);
 
   const getButtonText = () => {
     if (currSlide < 3) return "Next";

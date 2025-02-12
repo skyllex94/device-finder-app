@@ -8,7 +8,7 @@ import {
   Linking,
   Switch,
 } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useRouter } from "expo-router";
 import useRevenueCat from "@/hooks/useRevenueCat";
@@ -72,9 +72,7 @@ export default function Paywall({}) {
       const purchaserInfo = await Purchases.purchasePackage(packageToBuy);
 
       // Check if purchase completed
-      if (
-        purchaserInfo.customerInfo.entitlements.active.gamma_noise_subscriptions
-      ) {
+      if (purchaserInfo.customerInfo.entitlements.active.accufind_payments) {
         router.back();
       }
     } catch (err: any) {
@@ -88,7 +86,6 @@ export default function Paywall({}) {
   async function restorePurchase() {
     setPurchaseSpinner(true);
     const purchaserInfo = await Purchases.restorePurchases();
-    console.log("purchaserInfo:", purchaserInfo);
 
     if (purchaserInfo?.activeSubscriptions.length > 0) {
       Alert.alert("Success", "Your purchase has been restored");
@@ -358,7 +355,7 @@ export default function Paywall({}) {
                       <Text
                         className={`${theme.textSecondary} text-[10px] mt-1`}
                       >
-                        Only ${yearlyPrice} per year
+                        Only ${yearlyPrice.toFixed(2)} per year
                       </Text>
                     </View>
                     <View className="flex-row items-center justify-center">
@@ -408,7 +405,7 @@ export default function Paywall({}) {
                         <Text
                           className={`${theme.text} text-right text-[16px]`}
                         >
-                          ${weeklyPrice}
+                          ${weeklyPrice.toFixed(2)}
                         </Text>
                         <Text className={`${theme.textSecondary} text-[12px]`}>
                           per week

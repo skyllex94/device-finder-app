@@ -12,10 +12,19 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_RDJuNQOznuVZgeXfmhujsNdzjpM"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "kkanchev94@gmail.com",
+        "ascAppId": "6741714865",
+        "appleTeamId": "2A9PLXZR7S"
+      }
+    }
   }
 }

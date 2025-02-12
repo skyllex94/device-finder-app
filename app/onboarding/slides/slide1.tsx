@@ -7,7 +7,6 @@ import {
   Dimensions,
   Animated,
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
@@ -20,7 +19,7 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
   const [fadeAnim] = useState(() => new Animated.Value(0));
   const [slideAnim] = useState(() => new Animated.Value(50));
   const [imageAnim] = useState(() => new Animated.Value(0));
-  const [radarAnim] = useState(() => new Animated.Value(0));
+  const [spinAnim] = useState(() => new Animated.Value(0));
   const [pulseAnim] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
@@ -29,15 +28,20 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
       fadeAnim.setValue(0);
       slideAnim.setValue(50);
       imageAnim.setValue(0);
-      radarAnim.setValue(0);
+      spinAnim.setValue(0);
       pulseAnim.setValue(1);
 
       // Start main content animations
       Animated.sequence([
         Animated.parallel([
-          Animated.timing(fadeAnim, {
+          Animated.timing(imageAnim, {
             toValue: 1,
             duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1500,
             useNativeDriver: true,
           }),
           Animated.timing(slideAnim, {
@@ -46,14 +50,13 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
             useNativeDriver: true,
           }),
         ]),
-        Animated.timing(radarAnim, {
+        Animated.timing(spinAnim, {
           toValue: 1,
-          duration: 800,
+          duration: 1000,
           useNativeDriver: true,
         }),
       ]).start(() => {
         setHasAnimated(true);
-        // Start continuous pulse animation
         startPulseAnimation();
       });
     }
@@ -76,7 +79,7 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
     ).start();
   };
 
-  const spin = radarAnim.interpolate({
+  const spin = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   });
@@ -86,41 +89,21 @@ export default function Slide1({ isVisible = false }: Slide1Props) {
       <View className="flex-1 items-center justify-between py-8">
         <View className="flex-1 items-center justify-center relative">
           <Animated.View
-            style={{ opacity: imageAnim }}
+            style={{
+              opacity: imageAnim,
+              transform: [{ scale: pulseAnim }],
+            }}
             className="w-full items-center"
           >
-            {/* <Image
-              source={require("../../../assets/images/onboarding/slide1.png")}
-              style={{ width: width * 0.8, height: width * 0.8 }}
-              resizeMode="contain"
-            /> */}
-          </Animated.View>
-
-          {/* Background Radar Animation */}
-          <Animated.View
-            style={{
-              opacity: radarAnim,
-              transform: [{ scale: pulseAnim }],
-              position: "absolute",
-              zIndex: -1,
-            }}
-            className="items-center justify-center"
-          >
-            <View className="w-[300px] h-[300px] rounded-full border-2 border-blue-100 opacity-20" />
-            <View className="w-[200px] h-[200px] rounded-full border-2 border-blue-200 opacity-30 absolute" />
-            <View className="w-[100px] h-[100px] rounded-full border-2 border-blue-300 opacity-40 absolute" />
-            <Animated.View
+            <Animated.Image
+              source={require("../../../assets/images/icon_no_bg.png")}
               style={{
+                width: width * 0.7,
+                height: width * 0.7,
                 transform: [{ rotate: spin }],
               }}
-              className="absolute"
-            >
-              <MaterialCommunityIcons
-                name="radar"
-                size={320}
-                color="rgba(37, 99, 235, 0.1)"
-              />
-            </Animated.View>
+              resizeMode="contain"
+            />
           </Animated.View>
         </View>
 
