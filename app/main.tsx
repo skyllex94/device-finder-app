@@ -328,6 +328,9 @@ export default function MainScreen() {
   const [bluetoothReady, setBluetoothReady] = useState(false);
   const bleManager = React.useMemo(() => new BleManager(), []);
 
+  const [locationPermissionGranted, setLocationPermissionGranted] =
+    useState(false);
+
   // Refined Kalman Filter parameters for better accuracy
   const KF = {
     R: 0.08, // Reduced measurement noise
@@ -543,9 +546,20 @@ export default function MainScreen() {
 
             if (device && device.name) {
               try {
-                const currentLocation = await Location.getCurrentPositionAsync(
-                  {}
-                );
+                let deviceLocation: any;
+                let currentLocation: any;
+
+                if (locationPermissionGranted) {
+                  try {
+                    currentLocation = await Location.getCurrentPositionAsync(
+                      {}
+                    );
+                  } catch (locationError) {
+                    console.log(
+                      "Location update failed, continuing without location"
+                    );
+                  }
+                }
 
                 // Use a functional update to prevent state conflicts
                 setOtherDevices((prevDevices) => {
@@ -563,10 +577,13 @@ export default function MainScreen() {
                       );
                     const roundedDistance = roundToQuarter(distance);
 
-                    const deviceLocation = calculateDeviceLocation(
-                      currentLocation,
-                      distance
-                    );
+                    // Only calculate location if we have permission and current location
+                    if (currentLocation) {
+                      deviceLocation = calculateDeviceLocation(
+                        currentLocation,
+                        distance
+                      );
+                    }
 
                     const updatedDevices = [...prevDevices];
                     updatedDevices[existingDeviceIndex] = {
@@ -578,10 +595,9 @@ export default function MainScreen() {
                       rssiHistory,
                       kalmanState,
                       lastSeen: new Date(),
-                      location: deviceLocation,
+                      ...(deviceLocation && { location: deviceLocation }),
                     };
 
-                    // Update store outside of render
                     setTimeout(() => {
                       useDeviceStore.getState().updateDevices(updatedDevices);
                     }, 0);
@@ -595,10 +611,13 @@ export default function MainScreen() {
                       rssiHistory: [],
                     } as any);
 
-                  const deviceLocation = calculateDeviceLocation(
-                    currentLocation,
-                    distance
-                  );
+                  // Only calculate location if we have permission and current location
+                  if (currentLocation) {
+                    deviceLocation = calculateDeviceLocation(
+                      currentLocation,
+                      distance
+                    );
+                  }
 
                   const newDevice: Device = {
                     id: device.id,
@@ -608,12 +627,11 @@ export default function MainScreen() {
                     distance,
                     rssiHistory,
                     kalmanState,
-                    location: deviceLocation,
+                    ...(deviceLocation && { location: deviceLocation }),
                   };
 
                   const newDevices = [...prevDevices, newDevice];
 
-                  // Update store outside of render
                   setTimeout(() => {
                     useDeviceStore.getState().updateDevices(newDevices);
                   }, 0);
@@ -621,15 +639,21 @@ export default function MainScreen() {
                   return newDevices;
                 });
               } catch (error) {
-                console.error("Error updating device location:", error);
+                console.error("Error processing device:", error);
               }
             }
           }
         );
 
-        // Refresh location and clean up old devices every 10 seconds
+        // Clean up old devices periodically
         scanningInterval = setInterval(async () => {
-          await getCurrentLocation();
+          if (locationPermissionGranted) {
+            try {
+              await getCurrentLocation();
+            } catch (error) {
+              console.log("Location update failed during cleanup");
+            }
+          }
 
           setOtherDevices((prevDevices) =>
             prevDevices.filter(
@@ -650,7 +674,7 @@ export default function MainScreen() {
       clearInterval(scanningInterval);
       bleManager.stopDeviceScan();
     };
-  }, [bluetoothReady]);
+  }, [bluetoothReady, locationPermissionGranted]);
 
   // Remove the old scanning logic from handleStartSearch
   const handleStartSearch = useCallback(() => {
@@ -672,16 +696,19 @@ export default function MainScreen() {
     }
   };
 
-  // Request permissions and start scanning
+  // Modify the permission request to update state
   const requestPermissions = async () => {
     try {
       // Location permission is required for Bluetooth scanning on Android
       if (Platform.OS === "android") {
         const locationStatus =
           await Location.requestForegroundPermissionsAsync();
+        setLocationPermissionGranted(locationStatus.status === "granted");
         if (locationStatus.status !== "granted") {
           return false;
         }
+      } else {
+        setLocationPermissionGranted(true); // On iOS, we don't need location for basic scanning
       }
 
       // Request Bluetooth permissions
