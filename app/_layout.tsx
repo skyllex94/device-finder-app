@@ -9,7 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import Purchases from "react-native-purchases";
-import { useThemeStore } from "@/components/Themed";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -21,7 +20,6 @@ export const unstable_settings = {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [appFirstOpened, setAppFirstOpened] = useState<boolean | null>(null);
-  const { isDarkMode } = useThemeStore();
 
   useEffect(() => {
     async function prepare() {
@@ -55,7 +53,7 @@ export default function RootLayout() {
   });
 
   if (!isReady) {
-    return <SplashScreen isDarkMode={isDarkMode} />;
+    return <SplashScreen />;
   }
 
   return (

@@ -12,7 +12,7 @@ import {
 import React, { useState, useCallback, useEffect } from "react";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { useThemeStore } from "../components/Themed";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -267,6 +267,20 @@ const HelpModal = React.memo(
                     }`}
                   >
                     • Make sure Bluetooth is enabled on your device
+                  </Text>
+                  <Text
+                    className={`${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
+                    • Check that both Bluetooth and Location permissions are
+                    enabled in{" "}
+                    <Text
+                      onPress={() => Linking.openSettings()}
+                      className="text-blue-500 underline"
+                    >
+                      app settings
+                    </Text>
                   </Text>
                   <Text
                     className={`${
