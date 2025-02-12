@@ -325,8 +325,6 @@ export default function MainScreen() {
   const [isFilteringDevices, setIsFilteringDevices] = useState(false);
   const { distanceUnit } = useSettingsStore();
 
-  const { showReview } = useLocalSearchParams();
-
   const [bluetoothReady, setBluetoothReady] = useState(false);
   const bleManager = React.useMemo(() => new BleManager(), []);
 
