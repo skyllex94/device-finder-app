@@ -4,11 +4,19 @@ import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useDeviceStore } from "../../store/deviceStore";
 import { useSettingsStore } from "../../store/settingsStore";
-import { Platform, Switch, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+  Alert,
+  Linking,
+} from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import * as TaskManager from "expo-task-manager";
-import { formatDistance, VibrationManager } from "./vibration"; // Import the shared function
+
 import { useRouter } from "expo-router";
 import useRevenueCat from "@/hooks/useRevenueCat";
 
@@ -215,6 +223,25 @@ export function NotificationOption({
       return;
     }
 
+    // Check background permission before enabling
+    if (!isEnabled) {
+      const { status } = await Location.getBackgroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Background Location Required",
+          "To receive notifications when the app is in background, please allow 'Always' location access.",
+          [
+            {
+              text: "Open Settings",
+              onPress: () => Linking.openSettings(),
+            },
+            { text: "Cancel", style: "cancel" },
+          ]
+        );
+        return;
+      }
+    }
+
     const newState = await NotificationManager.toggleNotifications();
     setIsEnabled(newState);
   };
@@ -232,7 +259,6 @@ export function NotificationOption({
           size={20}
           color={isDarkMode ? "white" : "black"}
         />
-
         <Text className={`ml-2 ${isDarkMode ? "text-white" : "text-black"}`}>
           Notifications
         </Text>

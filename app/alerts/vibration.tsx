@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Text,
   Switch,
+  Alert,
+  Linking,
 } from "react-native";
 import { useDeviceStore } from "../../store/deviceStore";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -190,7 +192,6 @@ export function VibrationModal({
 
   useEffect(() => {
     VibrationManager.getVibrationDistance().then((distance) => {
-      // Find closest preset
       const closest = Object.entries(DISTANCE_PRESETS).reduce(
         (prev, [key, value]) => {
           return Math.abs(value - distance) <
@@ -310,6 +311,25 @@ export function SettingsVibrationOption({
         router.push("/paywall");
       }, 100);
       return;
+    }
+
+    // Check background permission before enabling
+    if (!isEnabled) {
+      const { status } = await Location.getBackgroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Background Location Required",
+          "To receive vibration alerts when the app is in background, please allow 'Always' location access.",
+          [
+            {
+              text: "Open Settings",
+              onPress: () => Linking.openSettings(),
+            },
+            { text: "Cancel", style: "cancel" },
+          ]
+        );
+        return;
+      }
     }
 
     const newState = await VibrationManager.toggleVibration();
