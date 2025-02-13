@@ -68,12 +68,16 @@ export default function RootLayout() {
           <Stack.Screen name="main" options={{ headerShown: false }} />
           <Stack.Screen name="settings" options={{ presentation: "modal" }} />
           <Stack.Screen name="map" options={{ presentation: "modal" }} />
+          <Stack.Screen name="heatmap" options={{ presentation: "modal" }} />
           <Stack.Screen
-            name="direction_finder"
-            options={{ presentation: "modal" }}
+            name="./alerts/notifications"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="./alerts/vibration"
+            options={{ headerShown: false }}
           />
 
-          <Stack.Screen name="heatmap" options={{ presentation: "modal" }} />
           <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
 
           <Stack.Screen

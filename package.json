@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
+    "eas-register-device": "eas device:create",
     "eas-build-local": "eas build --platform ios --local",
     "eas-build-dev": "eas build --profile development --platform ios",
     "eas-build-pro": "eas build --platform ios",
@@ -72,7 +73,8 @@
     "react-native-svg": "^15.11.1",
     "react-native-web": "~0.19.13",
     "tailwindcss": "^3.4.17",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "expo-updates": "~0.26.17"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
