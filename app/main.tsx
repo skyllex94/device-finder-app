@@ -526,7 +526,6 @@ export default function MainScreen() {
     requestInitialPermissions();
   }, []);
 
-  // Add this useEffect for Bluetooth state monitoring
   useEffect(() => {
     const subscription = bleManager.onStateChange((state) => {
       if (state === "PoweredOn") {
@@ -534,19 +533,19 @@ export default function MainScreen() {
       } else {
         setBluetoothReady(false);
       }
-    }, true); // true = emitCurrentState
+    }, true);
 
     return () => subscription.remove();
   }, [bleManager]);
 
-  // Add this utility function near your other utility functions
+  // Update UI time - 1.5 seconds
   const shouldUpdateUI = (device: Device): boolean => {
     const now = Date.now();
     const lastUpdate = device.lastUIUpdate || 0;
-    return now - lastUpdate >= 2000; // 2000ms = 2 seconds
+    return now - lastUpdate >= 1500; // 1.5 secs UI update time
   };
 
-  // Modify the scanning useEffect to include UI update throttling
+  // UI location updating every 1.5 secs only
   useEffect(() => {
     let scanningInterval: NodeJS.Timeout;
 
@@ -568,6 +567,19 @@ export default function MainScreen() {
 
             if (device && device.name) {
               try {
+                let deviceLocation: any;
+                let currentLocation: any;
+
+                if (locationPermissionGranted) {
+                  try {
+                    currentLocation = await Location.getCurrentPositionAsync(
+                      {}
+                    );
+                  } catch (locationError) {
+                    console.log("Location update failed");
+                  }
+                }
+
                 setOtherDevices((prevDevices) => {
                   const existingDeviceIndex = prevDevices.findIndex(
                     (d) => d.id === device.id
@@ -576,16 +588,20 @@ export default function MainScreen() {
                   const now = Date.now();
 
                   if (existingDeviceIndex !== -1) {
-                    // Update existing device
                     const existingDevice = prevDevices[existingDeviceIndex];
-
-                    // Calculate new values but only update UI if enough time has passed
                     const { distance, rssiHistory, kalmanState } =
                       calculateStableDistance(
                         device.rssi || -100,
                         existingDevice
                       );
-                    const roundedDistance = roundToQuarter(distance);
+
+                    // Always calculate new location if we have current location
+                    if (currentLocation) {
+                      deviceLocation = calculateDeviceLocation(
+                        currentLocation,
+                        distance
+                      );
+                    }
 
                     const shouldUpdate = shouldUpdateUI(existingDevice);
 
@@ -602,7 +618,7 @@ export default function MainScreen() {
                         ? distance
                         : existingDevice.distance,
                       roundedDistance: shouldUpdate
-                        ? roundedDistance
+                        ? roundToQuarter(distance)
                         : existingDevice.roundedDistance,
                       rssiHistory,
                       kalmanState,
@@ -610,8 +626,11 @@ export default function MainScreen() {
                       lastUIUpdate: shouldUpdate
                         ? now
                         : existingDevice.lastUIUpdate,
+                      // Always update location regardless of UI throttling
+                      ...(deviceLocation && { location: deviceLocation }),
                     };
 
+                    // Update the store immediately for location changes
                     setTimeout(() => {
                       useDeviceStore.getState().updateDevices(updatedDevices);
                     }, 0);
@@ -625,6 +644,14 @@ export default function MainScreen() {
                       rssiHistory: [],
                     } as any);
 
+                  // Calculate location for new device
+                  if (currentLocation) {
+                    deviceLocation = calculateDeviceLocation(
+                      currentLocation,
+                      distance
+                    );
+                  }
+
                   const newDevice: Device = {
                     id: device.id,
                     name: device.name || "Unknown Device",
@@ -634,9 +661,17 @@ export default function MainScreen() {
                     rssiHistory,
                     kalmanState,
                     lastUIUpdate: now,
+                    ...(deviceLocation && { location: deviceLocation }),
                   };
 
-                  return [...prevDevices, newDevice];
+                  const newDevices = [...prevDevices, newDevice];
+
+                  // Update store immediately for new devices
+                  setTimeout(() => {
+                    useDeviceStore.getState().updateDevices(newDevices);
+                  }, 0);
+
+                  return newDevices;
                 });
               } catch (error) {
                 console.error("Error processing device:", error);
